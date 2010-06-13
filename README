@@ -1,3 +1,24 @@
+arteget is a simple ruby scripts that dumps television programs from the "+7" site of Arte.
+Its usage is simple : run it with the program name as an argument.
+The argument should correspond to the name used on the website, which you can find easily in URLs :
+http://videos.arte.tv/fr/videos/programmes/court_circuit/index-3188712.html => "court_circuit"
+http://videos.arte.tv/fr/videos/philosophie-3256770.html => "philosophie"
+
+
+This software includes libhttp by Yoann Guillot, which you can find here :
+http://guillot.iiens.net/softs/libhttp/
+
+Thank you Yoann !
+
+History :
+v1.0  : 2010/06/13
+	 - new libhttp release
+	 - handles new site
+	 - way cleaner code
+
+v0.1  :  2008/XX/XX 
+	 - First "release"
+
 Arte seemed to have implemented some online check with GETS on the streaming 
 server to keep the streaming alive, but apparently it's just statistics.
 The code is there in case it is useful :
@@ -17,3 +38,7 @@ th = Thread.new do
 		cnt += 10
 	end
 end
+
+Contact me by mail :
+mailbox : devel-arteget
+domain : syscall.eu

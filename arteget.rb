@@ -1,4 +1,20 @@
 #!/usr/bin/env ruby
+# arteget 2010/06/13
+# Copyright Raphaël Rigo
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 require 'pp'
 require 'uri'
@@ -14,7 +30,7 @@ LOG_QUIET = 0
 LOG_NORMAL = 1
 LOG_DEBUG = 2
 
-$loglevel = LOG_DEBUG
+$loglevel = LOG_NORMAL
 
 def fatal(msg)
 	puts msg
@@ -40,12 +56,13 @@ fatal("Cannot find index list") if not index_list_url
 
 log("Getting list page")
 index_list = hc.get(index_list_url).content
-programme = index_list[/href="(.*\/#{progname}-.*\.html)"/,1]
+programme = index_list[/href="(.*\/#{progname}.*\.html)"/,1]
 
 if not programme then
 	log("Could not find program in list, trying another way")
 	log("Getting program page")
-	programme = index[/href="(.*\/#{progname}-.*\.html)"/,1]
+	programme = index[/href="(.*\/#{progname}.*\.html)"/,1]
+	fatal("Could not find program page") if not programme
 	prog_page = hc.get(programme).content
 	prog_list_url = prog_page[/listViewUrl: "(.*)"/,1]
 	fatal("Cannot find list for program") if not prog_list_url
@@ -76,19 +93,27 @@ vid_lang_url = ref_xml.root.elements["videos/video[@lang='#{LANG}']"].attributes
 vid_lang_url.gsub!(/.*arte.tv/,'')
 log(vid_lang_url, LOG_DEBUG)
 
-log("Getting FR video XML desc")
+log("Getting #{LANG} video XML desc")
 vid_lang_xml_url = hc.get(vid_lang_url).content
 vid_lang_xml = Document.new(vid_lang_xml_url)
 rtmp_url = vid_lang_xml.root.elements["urls/url[@quality='#{QUALITY}']"].text
 log(rtmp_url, LOG_DEBUG)
 
-log("rtmpdump --swfVfy #{player_url} -o #{vid_id}.flv -r \"#{rtmp_url}\"")
+log("Dumping video : #{vid_id}.flv")
+log("rtmpdump --swfVfy #{player_url} -o #{vid_id}.flv -r \"#{rtmp_url}\"", LOG_DEBUG)
 fork do 
 	exec("rtmpdump", "-q", "--swfVfy", player_url, "-o", "#{vid_id}.flv", "-r", rtmp_url)
 end
 Process.wait
-if $?.exited? and $?.exitstatus == 2 then
-	log("rtmpdump exited, trying to resume")
-	exec("rtmpdump", "-e", "-q", "--swfVfy", player_url, "-o", "#{vid_id}.flv", "-r", rtmp_url)
+if $?.exited?
+	case $?.exitstatus
+		when 0 then
+			log("Video successfully dumped")
+		when 1 then
+			fatal("rtmpdump failed")
+		when 2 then
+			log("rtmpdump exited, trying to resume")
+			exec("rtmpdump", "-e", "-q", "--swfVfy", player_url, "-o", "#{vid_id}.flv", "-r", rtmp_url)
+	end
 end
 
