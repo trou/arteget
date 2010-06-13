@@ -83,5 +83,12 @@ rtmp_url = vid_lang_xml.root.elements["urls/url[@quality='#{QUALITY}']"].text
 log(rtmp_url, LOG_DEBUG)
 
 log("rtmpdump --swfVfy #{player_url} -o #{vid_id}.flv -r \"#{rtmp_url}\"")
-# ATTENTION ! FAILLE !
-system("rtmpdump -q --swfVfy #{player_url} -o #{vid_id}.flv -r \"#{rtmp_url}\"")
+fork do 
+	exec("rtmpdump", "-q", "--swfVfy", player_url, "-o", "#{vid_id}.flv", "-r", rtmp_url)
+end
+Process.wait
+if $?.exited? and $?.exitstatus == 2 then
+	log("rtmpdump exited, trying to resume")
+	exec("rtmpdump", "-e", "-q", "--swfVfy", player_url, "-o", "#{vid_id}.flv", "-r", rtmp_url)
+end
+
