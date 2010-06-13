@@ -1,0 +1,27 @@
+
+Une librairie http et html, full ruby
+
+Simule le plus fidelement possible un client interactif (firefox) : fake useragent, fetche les images liees, gere les cookies, necessite un traitement particulier pour fetcher une page qui n'est pas liee depuis la page en cours, valide les parametres passés aux formulaires, fait des pauses entre differentes requetes (simule le temps de lecture).
+
+Ne gere pas le changement de site (virtual hostname).
+
+Le parseur HTML supporte les sites 'incorrects'.
+Le client supporte SSL, ipv6, proxy, authentications, les redirections.
+Le javascript n'est pas géré, mais les sections de code embedded sont parsées correctement (meta-tag 'Script').
+
+Sample:
+
+s = HttpClient.new('http-proxy://kikoo:lol@monproxy.net/https://monbeausite.com')
+s.get('/')
+s.get('/login.php')	# raise si aucun lien vers /login.php n'est trouvé sur /
+s.post('/login_valid.php', 'username' => '007', 'password' => 'topsecret')	# raise si le formulaire ayant pour action 'login_valid' n'inclut pas de variable 'username'
+puts s.get('/topsecret/mission.html').get_text		# affiche le texte a peu pres comme il apparaitrait dans un browser (sans balises, avec retours a la ligne)
+s.get('/logout.php')
+
+alternative:
+
+s.get('/login.php')	# raise si aucun lien vers /login.php n'est trouvé sur /
+pd = s.post_allowed.first
+s.post pd.url, pd.vars.merge('user' => 28)	# reutilise les <input type="hidden"> automatiquement
+
+Pour faciliter l'ecriture de scripts, get_text peut afficher les balises relevant des formulaires en plus du texte suivant ses arguments.
