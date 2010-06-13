@@ -1,26 +1,41 @@
 #!/usr/bin/env ruby
-#
+
 require 'pp'
 require 'uri'
 require 'libhttpclient'
 require 'rexml/document'
 include REXML
-DEBUG = nil
-PROGNAME="karambolage"
 
-hc = HttpClient.new("videos.arte.tv",10)
-hc.allowbadget = true
-puts "Getting index"
-index = hc.get('/fr/videos/arte7').content
-index_list_url = index[/listViewUrl: "(.*)"/,1]
-if not index_list_url then
-	puts "Cannot find index list"
+LOG_QUIET = 0
+LOG_NORMAL = 1
+LOG_DEBUG = 2
+
+$loglevel = LOG_NORMAL
+
+def fatal(msg)
+	puts msg
 	exit(1)
 end
-puts "Getting list page"
-index_list = hc.get(index_list_url).content
 
-programme = index_list[/href="(.*\/#{PROGNAME}-.*\.html)"/,1]
+def log(msg, level)
+	puts msg if level <= $loglevel
+end
+
+progname=ARGV.shift
+fatal("Program name needed") if not progname
+
+hc = HttpClient.new("videos.arte.tv")
+hc.allowbadget = true
+
+log("Getting index", LOG_NORMAL)
+
+index = hc.get('/fr/videos/arte7').content
+index_list_url = index[/listViewUrl: "(.*)"/,1]
+fatal("Cannot find index list") if not index_list_url 
+
+log("Getting list page", LOG_NORMAL)
+index_list = hc.get(index_list_url).content
+programme = index_list[/href="(.*\/#{progname}-.*\.html)"/,1]
 #if not programme then
 #	puts "No such program : #{programme}"
 #	exit(1)
@@ -36,36 +51,30 @@ programme = index_list[/href="(.*\/#{PROGNAME}-.*\.html)"/,1]
 #prog_list = hc.get(prog_list_url).content
 #first = prog_list[/href="(.*\.html)"/,1]
 first = programme
-if not first
-	puts "Cannot find first video"
-	exit(1)
-end
+fatal("Cannot find first video") if not first
 vid_id = first[/-(.*)\./,1]
-if not vid_id
-	puts "No video id in URL"
-	exit(1)
-end
+fatal("No video id in URL") if not vid_id
 
-puts "Getting video page"
+log("Getting video page", LOG_NORMAL)
 page_video = hc.get(first).content
 videoref_url = page_video[/videorefFileUrl = "http:\/\/videos.arte.tv(.*\.xml)"/,1]
 player_url = page_video[/url_player = "(.*\.swf)"/,1]
-puts videoref_url if DEBUG
-puts player_url if DEBUG
-puts "Getting video XML desc"
+log(videoref_url, LOG_DEBUG) 
+log(player_url, LOG_DEBUG) 
+log("Getting video XML desc", LOG_NORMAL)
 videoref_content = hc.get(videoref_url).content
-puts videoref_content if DEBUG
+log(videoref_content, LOG_DEBUG)
 ref_xml = Document.new(videoref_content)
 vid_fr_url = ref_xml.root.elements["videos/video[@lang='fr']"].attributes['ref']
 vid_fr_url.gsub!(/.*arte.tv/,'')
-pp vid_fr_url if DEBUG
-puts "Getting FR video XML desc"
+log(vid_fr_url, LOG_DEBUG)
+log("Getting FR video XML desc", LOG_NORMAL)
 vid_fr_xml_url = hc.get(vid_fr_url).content
 vid_fr_xml = Document.new(vid_fr_xml_url)
 rtmp_hd_url = vid_fr_xml.root.elements["urls/url[@quality='hd']"].text
-pp rtmp_hd_url if DEBUG
+log(rtmp_hd_url, LOG_DEBUG)
 
-puts "rtmpdump --swfVfy #{player_url} -o #{vid_id}.flv -r \"#{rtmp_hd_url}\""
+log("rtmpdump --swfVfy #{player_url} -o #{vid_id}.flv -r \"#{rtmp_hd_url}\"", LOG_NORMAL)
 # ATTENTION ! FAILLE !
 system("rtmpdump --swfVfy #{player_url} -o #{vid_id}.flv -r \"#{rtmp_hd_url}\"")
 
