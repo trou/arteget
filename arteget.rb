@@ -59,6 +59,7 @@ end
 fatal("Cannot find program at all") if not programme
 vid_id = programme[/-(.*)\./,1]
 fatal("No video id in URL") if not vid_id
+fatal("Already downloaded") if Dir["*#{vid_id}*"].length > 0 
 
 log("Getting video page")
 page_video = hc.get(programme).content
@@ -83,4 +84,4 @@ log(rtmp_url, LOG_DEBUG)
 
 log("rtmpdump --swfVfy #{player_url} -o #{vid_id}.flv -r \"#{rtmp_url}\"")
 # ATTENTION ! FAILLE !
-system("rtmpdump --swfVfy #{player_url} -o #{vid_id}.flv -r \"#{rtmp_url}\"")
+system("rtmpdump -q --swfVfy #{player_url} -o #{vid_id}.flv -r \"#{rtmp_url}\"")
