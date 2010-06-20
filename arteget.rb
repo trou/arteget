@@ -93,7 +93,7 @@ vid_lang_url = ref_xml.root.elements["videos/video[@lang='#{LANG}']"].attributes
 vid_lang_url.gsub!(/.*arte.tv/,'')
 log(vid_lang_url, LOG_DEBUG)
 
-log("Getting #{LANG} video XML desc")
+log("Getting #{LANG} #{QUALITY} video XML desc")
 vid_lang_xml_url = hc.get(vid_lang_url).content
 vid_lang_xml = Document.new(vid_lang_xml_url)
 rtmp_url = vid_lang_xml.root.elements["urls/url[@quality='#{QUALITY}']"].text
