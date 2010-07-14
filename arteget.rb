@@ -47,33 +47,38 @@ fatal("Program name needed") if not progname
 hc = HttpClient.new("videos.arte.tv")
 hc.allowbadget = true
 
-log("Getting index")
+if progname =~ /^http:/ then
+	log("Trying with URL")
+	programme = progname
+else
+	log("Getting index")
 
-index = hc.get('/fr/videos/arte7').content
-index_list_url = index[/listViewUrl: "(.*)"/,1]
-log(index_list_url, LOG_DEBUG)
-fatal("Cannot find index list") if not index_list_url 
-
-log("Getting list page")
-index_list = hc.get(index_list_url).content
-programme = index_list[/href="(.*\/#{progname}.*\.html)"/,1]
-
-if not programme then
-	log("Could not find program in list, trying another way")
-	log("Getting program page")
-	programme = index[/href="(.*\/#{progname}.*\.html)"/,1]
-	fatal("Could not find program page") if not programme
-	prog_page = hc.get(programme).content
-	prog_list_url = prog_page[/listViewUrl: "(.*)"/,1]
-	fatal("Cannot find list for program") if not prog_list_url
+	index = hc.get('/fr/videos/arte7').content
+	index_list_url = index[/listViewUrl: "(.*)"/,1]
+	log(index_list_url, LOG_DEBUG)
+	fatal("Cannot find index list") if not index_list_url 
 
 	log("Getting list page")
-	prog_list = hc.get(prog_list_url).content
-	programme = prog_list[/href="(.*\.html)"/,1]
+	index_list = hc.get(index_list_url).content
+	programme = index_list[/href="(.*\/#{progname}.*\.html)"/,1]
 
+	if not programme then
+		log("Could not find program in list, trying another way")
+		log("Getting program page")
+		programme = index[/href="(.*\/#{progname}.*\.html)"/,1]
+		fatal("Could not find program page") if not programme
+		prog_page = hc.get(programme).content
+		prog_list_url = prog_page[/listViewUrl: "(.*)"/,1]
+		fatal("Cannot find list for program") if not prog_list_url
+
+		log("Getting list page")
+		prog_list = hc.get(prog_list_url).content
+		programme = prog_list[/href="(.*\.html)"/,1]
+
+	end
+
+	fatal("Cannot find program at all") if not programme
 end
-
-fatal("Cannot find program at all") if not programme
 vid_id = programme[/-(.*)\./,1]
 fatal("No video id in URL") if not vid_id
 fatal("Already downloaded") if Dir["*#{vid_id}*"].length > 0 
