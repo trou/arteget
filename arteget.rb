@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# arteget 2010/07/14
+# arteget 
 # Copyright Raphaël Rigo
 #
 # This program is free software; you can redistribute it and/or modify

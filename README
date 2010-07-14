@@ -11,6 +11,8 @@ http://guillot.iiens.net/softs/libhttp/
 Thank you Yoann !
 
 History :
+v1.X  : 2010/06/13
+	 - URL arg support
 v1.0  : 2010/06/13
 	 - new libhttp release
 	 - handles new site
