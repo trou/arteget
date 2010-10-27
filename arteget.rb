@@ -53,7 +53,7 @@ if progname =~ /^http:/ then
 else
 	log("Getting index")
 
-	index = hc.get('/fr/videos/arte7').content
+	index = hc.get('/fr/videos').content
 	index_list_url = index[/listViewUrl: "(.*)"/,1]
 	log(index_list_url, LOG_DEBUG)
 	fatal("Cannot find index list") if not index_list_url 
