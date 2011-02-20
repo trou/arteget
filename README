@@ -1,9 +1,11 @@
 arteget is a simple ruby scripts that dumps television programs from the "+7" site of Arte.
 Its usage is simple : run it with the program name as an argument.
 The argument should correspond to the name used on the website, which you can find easily in URLs :
+
 http://videos.arte.tv/fr/videos/programmes/court_circuit/index-3188712.html => "court_circuit"
 http://videos.arte.tv/fr/videos/philosophie-3256770.html => "philosophie"
 
+You can also pass directly the URL as an argument to download a single video.
 
 This software includes libhttp by Yoann Guillot, which you can find here :
 http://guillot.iiens.net/softs/libhttp/
