@@ -49,6 +49,7 @@ class HttpClient
 		@othersite_redirect = lambda { |url_, recurs| puts "Will no go to another site ! (#{url_})" if not recurs rescue nil }
 		@bgdlqueue = Queue.new
 		@bgdlthreads = Array.new(self.class.bgthreadcount) { Thread.new {
+			Thread.current[:status] = :idle
 			Thread.current[:http_s] = HttpServer.new(url)
 			loop {
 				tg = @bgdlqueue.shift
@@ -56,11 +57,15 @@ class HttpClient
 					Thread.current[:http_s].close
 					break
 				end
+				Thread.current[:status] = :busy
 				get(tg, 0, {}, true)
+				Thread.current[:status] = :idle
 			}
 		} }
 		clear
 	end
+
+	def urlpath; @http_s.urlpath ; end
 
 	def close
 		clear
@@ -76,7 +81,7 @@ class HttpClient
 	end
 
 	def wait_bg
-		sleep 0.1 until @bgdlqueue.empty?
+		sleep 0.1 until @bgdlqueue.empty? and @bgdlthreads.all? { |t| t[:status] == :idle }
 	end
 
 	def status_save
@@ -312,6 +317,7 @@ class HttpClient
 			case newurl
 			when /^http#{'s' if @http_s.use_ssl}:\/\/#{@http_s.vhost}(?::#{@http_s.vport or @http_s.use_ssl ? 443 : 80})?(.*)$/, /^(\/.*)$/
 				newurl = $1
+				newurl = '/'+newurl if newurl[0] != ?/
 				if newurl =~ /^(.*?)\?(.*)$/
 					newurl, gdata = $1, $2
 					newurl += '?' +
@@ -364,7 +370,7 @@ class HttpClient
 			when 'a', 'area'
 				get_allow << e['href']
 			when 'link'
-				to_fetch << e['href']
+				to_fetch << e['href'] unless e['rel'] == 'alternate'
 			when 'form'
 				# default target
 				tg = cururlprefix + url.sub(/[?#].*$/, '')

@@ -188,7 +188,7 @@ class HttpServer
 
 	# global defaults
 	@@timeout = 120
-	@@hdr_useragent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1) Gecko/20061010 Firefox/2.0'
+	@@hdr_useragent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)'
 	@@hdr_accept = 'text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5'
 	@@hdr_encoding = 'gzip,deflate'
 	@@hdr_language = 'en'
@@ -199,6 +199,7 @@ class HttpServer
 		}
 	end
 	attr_accessor :timeout, :hdr_useragent, :hdr_accept, :hdr_encoding, :hdr_language
+	attr_accessor :urlpath
 
 	def self.open(*a)
 		s = new(*a)
@@ -213,18 +214,18 @@ class HttpServer
 		end
 
 		hostre = '[\w.-]+|\[[a-fA-F0-9:]+\]'
-                raise "Unparsed url #{url.inspect}" unless md = %r{^(?:(http-proxy|socks)://(\w*:\w*@)?(#{hostre})(:\d+)?/)?http(s)?://(\w*:\w*@)?(?:([\w.-]+)(:\d+)?@)?(#{hostre})(:\d+)?/}.match(url)
+                raise "Unparsed url #{url.inspect}" unless md = %r{^(?:(http-proxy|socks)://(\w*:[^@]*@)?(#{hostre})(:\d+)?/)?http(s)?://(\w*:[^@]*@)?(?:([\w.-]+)(:\d+)?@)?(#{hostre})(:\d+)?(/.*)}.match(url)
 
-		@proxytype, @proxylp, @proxyh, proxyp, @use_ssl, @loginpass, vhost, vport, @host, port = md.captures
+		@proxytype, @proxylp, @proxyh, proxyp, @use_ssl, @loginpass, vhost, vport, @host, port, @urlpath = md.captures
 		@proxyh = @proxyh[1..-2] if @proxyh and @proxyh[0] == ?[
 		@host   = @host[1..-2]   if @host[0] == ?[
 
                 @proxyp = proxyp ? proxyp[1..-1].to_i : 3128
                 @port = port ? port[1..-1].to_i : (@use_ssl ? 443 : 80)
 
-                @proxylp = 'Basic '+[@proxylp.chop].pack('m').chomp if @proxylp
+                @proxylp = 'Basic '+[@proxylp.chop].pack('m').split.join if @proxylp
 		@loginpass = nil if @loginpass == ':@'
-                @loginpass = 'Basic '+[@loginpass.chop].pack('m').chomp if @loginpass
+                @loginpass = 'Basic '+[@loginpass.chop].pack('m').split.join if @loginpass
                 @vhost = vhost ? vhost : @host
 		@vport = vport ? vport[1..-1].to_i : @port
 
@@ -376,7 +377,7 @@ EOE
 	
 	def setup_request_headers(headers)
 		headers['Host'] = @vhost
-		headers['Host'] += ":#@vport" if @vport != 80
+		#headers['Host'] += ":#@vport" if @vport != 80
 		headers['User-Agent'] ||= @hdr_useragent
 		headers['Accept'] ||= @hdr_accept
 		headers['Connection'] ||= 'keep-alive'
@@ -480,7 +481,7 @@ EOE
 
 	def close
 		return if not @socket
- 		@socket.shutdown
+ 		@socket.shutdown if @socket.respond_to? :shutdown	# SSL
 		@socket.close
 		@socket = nil
 	rescue
