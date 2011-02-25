@@ -1,18 +1,28 @@
-arteget is a simple ruby scripts that dumps television programs from the "+7" site of Arte.
-Its usage is simple : run it with the program name as an argument.
-The argument should correspond to the name used on the website, which you can find easily in URLs :
+arteget is a simple ruby script that dumps television programs from the "+7" site of Arte.
 
-http://videos.arte.tv/fr/videos/programmes/court_circuit/index-3188712.html => "court_circuit"
-http://videos.arte.tv/fr/videos/philosophie-3256770.html => "philosophie"
-
-You can also pass directly the URL as an argument to download a single video.
-
+It uses rtmpdump to dump streams to the disk. Be sure to have it in your PATH.
 This software includes libhttp by Yoann Guillot, which you can find here :
 http://guillot.iiens.net/softs/libhttp/
 
 Thank you Yoann !
 
+Basic usage :
+1) downloading the latest broadcasts of a given program :
+	$ ./arteget.rb karambolage
+2) downloading a single video :
+	$ ./arteget.rb http://videos.arte.tv/fr/videos/pret_a_jeter-3700234.html 
+3) downloading the 10 most viewed videos :
+	$ ./arteget.rb --top=10
+4) downloading the 10 best rated videos :
+	$ ./arteget.rb -b
+5) downloading in german, standard quality :
+	$ ./artget.rb --qual=sd --lang=de karambolage
+
 History :
+v1.1   : 2011/02/24
+	 - options on the command line
+	 - reworked to use XML descriptions
+	 - top videos (views/ratings) support
 v1.01  : 2011/02/20
 	 - URL arg support
 	 - new site URL
@@ -25,7 +35,7 @@ v1.0  : 2010/06/13
 v0.1  :  2008/XX/XX 
 	 - First "release"
 
-Arte seemed to have implemented some online check with GETS on the streaming 
+Arte seems to have implemented some online check with GETS on the streaming 
 server to keep the streaming alive, but apparently it's just statistics.
 The code is there in case it is useful :
 

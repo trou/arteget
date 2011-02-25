@@ -41,7 +41,7 @@ end
 def print_usage
 	puts "Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] --best[=NUM]|--top[=NUM]|URL|program"
 	puts "\t-v\t--verbose\tdebug output"
-	puts "\t-q\t--qual=hd|hq\tchoose quality, hq or hd (default)"
+	puts "\t-q\t--qual=hd|sd\tchoose quality, sd or hd (default)"
 	puts "\t-l\t--lang=fr|de\tchoose language, german or french (default)"
 	puts "\t-b\t--best[=NUM]\tdownload the NUM (10 default) best rated programs"
 	puts "\t-t\t--top[=NUM]\tdownload the NUM (10 default) most viewed programs"
