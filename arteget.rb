@@ -39,7 +39,14 @@ def log(msg, level=LOG_NORMAL)
 end
 
 def print_usage
-	puts "Usage : arteget [-v] (--best=NUM|--top=NUM)|URL|program"
+	puts "Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] --best=NUM|--top=NUM|URL|program"
+	puts "\t-v\t\t\tdebug output"
+	puts "\t-q\t--qual=hd|hq\tchoose quality, hq or hd (default)"
+	puts "\t-l\t--lang=fr|de\tchoose language, german or french (default)"
+	puts "\t-b\t--best=NUM\tdownload the NUM best rated programs"
+	puts "\t-t\t--top=NUM\tdownload the NUM most viewed programs"
+	puts "\tURL\t\t\tdownload the video on this page"
+	puts "\tprogram\t\t\tdownload the latest avaiable broadcasts of \"program\""
 end
 
 def parse_xml(xml_url, progname=nil)
@@ -157,5 +164,5 @@ $hc = HttpClient.new("videos.arte.tv")
 $hc.allowbadget = true
 
 progs_data = get_progs_urls(progname)
-#log(progs_data, LOG_DEBUG)
+log(progs_data, LOG_DEBUG)
 progs_data.each {|p| dump_video(p[0], p[1], p[2]) }
