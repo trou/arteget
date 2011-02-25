@@ -42,6 +42,72 @@ def print_usage
 	puts "Usage : arteget [-v] (--best=NUM|--top=NUM)|URL|program"
 end
 
+def parse_xml(hc, xml_url, progname=nil)
+	xml_content = hc.get(xml_url).content
+	xml = Document.new(xml_content)
+	result = []
+	xml.root.each_element("video") do |e|
+		if progname and e.get_text('title').to_s !~ /#{progname}/i
+			next
+		end
+		t=[e.get_text('targetUrl'),e.get_text('title'),e.get_text('teaserText')]
+		t.map! {|e| e.to_s.gsub("\n","") }
+		result << t
+	end
+	return result
+end
+
+def get_progs_urls(hc, progname)
+	if progname =~ /^http:/ then
+		log("Trying with URL")
+		return progname
+	end
+	log("Getting index")
+
+	index = hc.get('/fr/videos').content
+	xml_url = index[/coverflowXmlUrl = "(.*)"/,1]
+
+	log(xml_url, LOG_DEBUG)
+	fatal("Cannot find index list") if not xml_url 
+
+	if $options[:best] then
+		bestnum = $options[:best]
+		log("Getting best #{bestnum} list page")
+		result = parse_xml(hc, xml_url+"?hash=/tv/coverflow/popular/bestrated/1/#{bestnum}/")
+		pp result
+		exit
+	elsif $options[:top] then
+		topnum = $options[:top]
+		log("Getting top #{topnum} list page")
+		result = parse_xml(hc, xml_url+"?hash=/tv/coverflow/popular/mostviewed/1/#{topnum}/")
+		pp result
+		exit
+	else
+		log("Getting list page")
+		result = parse_xml(hc, xml_url, progname)
+		pp result
+		exit
+		index_list = hc.get(xml_url).content
+		result = [index_list[/href="(.*\/#{progname}.*\.html)"/,1]]
+
+		if not result then
+			log("Could not find program in list, trying another way")
+			log("Getting program page")
+			result = index[/href="(.*\/#{progname}.*\.html)"/,1]
+			fatal("Could not find program page") if not result
+			prog_page = hc.get(result).content
+			prog_list_url = prog_page[/listViewUrl: "(.*)"/,1]
+			fatal("Cannot find list for program") if not prog_list_url
+
+			log("Getting list page")
+			prog_list = hc.get(prog_list_url).content
+			result = [prog_list[/href="(.*\.html)"/,1]]
+		end
+		fatal("Cannot find program at all") if not result
+	end
+	return result
+end
+
 begin 
 	OptionParser.new do |opts|
 		opts.on('-v', "--verbose") { |v| $options[:log] = LOG_DEBUG }
@@ -66,44 +132,15 @@ end
 hc = HttpClient.new("videos.arte.tv")
 hc.allowbadget = true
 
-if progname =~ /^http:/ then
-	log("Trying with URL")
-	programme = progname
-else
-	log("Getting index")
+program_page_url = get_progs_urls(hc, progname)
+log(program_page_url, LOG_DEBUG)
 
-	index = hc.get('/fr/videos').content
-	index_list_url = index[/listViewUrl: "(.*)"/,1]
-	log(index_list_url, LOG_DEBUG)
-	fatal("Cannot find index list") if not index_list_url 
-
-	log("Getting list page")
-	index_list = hc.get(index_list_url).content
-	programme = index_list[/href="(.*\/#{progname}.*\.html)"/,1]
-
-	if not programme then
-		log("Could not find program in list, trying another way")
-		log("Getting program page")
-		programme = index[/href="(.*\/#{progname}.*\.html)"/,1]
-		fatal("Could not find program page") if not programme
-		prog_page = hc.get(programme).content
-		prog_list_url = prog_page[/listViewUrl: "(.*)"/,1]
-		fatal("Cannot find list for program") if not prog_list_url
-
-		log("Getting list page")
-		prog_list = hc.get(prog_list_url).content
-		programme = prog_list[/href="(.*\.html)"/,1]
-
-	end
-
-	fatal("Cannot find program at all") if not programme
-end
-vid_id = programme[/-(.*)\./,1]
+vid_id = program_page_url[/-(.*)\./,1]
 fatal("No video id in URL") if not vid_id
 fatal("Already downloaded") if Dir["*#{vid_id}*"].length > 0 
 
 log("Getting video page")
-page_video = hc.get(programme).content
+page_video = hc.get(program_page_url).content
 videoref_url = page_video[/videorefFileUrl = "http:\/\/videos.arte.tv(.*\.xml)"/,1]
 player_url = page_video[/url_player = "(.*\.swf)"/,1]
 log(videoref_url, LOG_DEBUG) 
