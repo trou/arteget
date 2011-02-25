@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # arteget 
-# Copyright Raphaël Rigo
+# Copyright 2008-2011 Raphaël Rigo
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,16 +39,17 @@ def log(msg, level=LOG_NORMAL)
 end
 
 def print_usage
-	puts "Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] --best=NUM|--top=NUM|URL|program"
-	puts "\t-v\t\t\tdebug output"
+	puts "Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] --best[=NUM]|--top[=NUM]|URL|program"
+	puts "\t-v\t--verbose\tdebug output"
 	puts "\t-q\t--qual=hd|hq\tchoose quality, hq or hd (default)"
 	puts "\t-l\t--lang=fr|de\tchoose language, german or french (default)"
-	puts "\t-b\t--best=NUM\tdownload the NUM best rated programs"
-	puts "\t-t\t--top=NUM\tdownload the NUM most viewed programs"
+	puts "\t-b\t--best[=NUM]\tdownload the NUM (10 default) best rated programs"
+	puts "\t-t\t--top[=NUM]\tdownload the NUM (10 default) most viewed programs"
 	puts "\tURL\t\t\tdownload the video on this page"
 	puts "\tprogram\t\t\tdownload the latest avaiable broadcasts of \"program\""
 end
 
+# Find videos in the given XML url, keeping only the given program if specified
 def parse_xml(xml_url, progname=nil)
 	xml_content = $hc.get(xml_url).content
 	xml = Document.new(xml_content)
@@ -58,12 +59,14 @@ def parse_xml(xml_url, progname=nil)
 			next
 		end
 		t=[e.get_text('targetUrl'),e.get_text('title'),e.get_text('teaserText')]
-		t.map! {|e| e.to_s.gsub("\n","") }
+		t.map! {|e| REXML::Text::unnormalize(e.to_s).gsub("\n","") }
 		result << t
 	end
 	return result
 end
 
+# Basically gets the lists of programs in XML format
+# returns an array of arrays, containing 3 strings : [url, title, teaser]
 def get_progs_urls(progname)
 	if progname =~ /^http:/ then
 		log("Trying with URL")
@@ -80,6 +83,7 @@ def get_progs_urls(progname)
 	if $options[:best] then
 		bestnum = $options[:best]
 		log("Getting best #{bestnum} list page")
+		# ohhh magic !
 		result = parse_xml(xml_url+"?hash=/tv/coverflow/popular/bestrated/1/#{bestnum}/")
 	elsif $options[:top] then
 		topnum = $options[:top]
@@ -95,9 +99,10 @@ end
 
 def dump_video(page_url, title, teaser)
 	log("Trying to get #{title}, teaser : \"#{teaser}\"")
+	# ugly but the only way (?)
 	vid_id = page_url[/-(.*)\./,1]
-	fatal("No video id in URL") if not vid_id
-	fatal("Already downloaded") if Dir["*#{vid_id}*"].length > 0 
+	return log("No video id in URL") if not vid_id
+	return log("Already downloaded") if Dir["*#{vid_id}*"].length > 0 
 
 	log("Getting video page")
 	page_video = $hc.get(page_url).content
@@ -121,9 +126,10 @@ def dump_video(page_url, title, teaser)
 	log(rtmp_url, LOG_DEBUG)
 
 	log("Dumping video : #{vid_id}.flv")
-	log("rtmpdump --swfVfy #{player_url} -o #{vid_id}.flv -r \"#{rtmp_url}\"", LOG_DEBUG)
+	filename = vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+".flv"
+	log("rtmpdump --swfVfy #{player_url} -o #{filename} -r \"#{rtmp_url}\"", LOG_DEBUG)
 	fork do 
-		exec("rtmpdump", "-q", "--swfVfy", player_url, "-o", "#{vid_id}.flv", "-r", rtmp_url)
+		exec("rtmpdump", "-q", "--swfVfy", player_url, "-o", filename, "-r", rtmp_url)
 	end
 	Process.wait
 	if $?.exited?
@@ -131,7 +137,7 @@ def dump_video(page_url, title, teaser)
 			when 0 then
 				log("Video successfully dumped")
 			when 1 then
-				fatal("rtmpdump failed")
+				return log("rtmpdump failed")
 			when 2 then
 				log("rtmpdump exited, trying to resume")
 				exec("rtmpdump", "-e", "-q", "--swfVfy", player_url, "-o", "#{vid_id}.flv", "-r", rtmp_url)
@@ -142,8 +148,8 @@ end
 begin 
 	OptionParser.new do |opts|
 		opts.on('-v', "--verbose") { |v| $options[:log] = LOG_DEBUG }
-		opts.on('-b', "--best=NUM") { |n| $options[:best] = n.to_i }
-		opts.on('-t', "--top=NUM") { |n| $options[:top] = n.to_i }
+		opts.on('-b', "--best[=NUM]") { |n| $options[:best] = n ? n.to_i : 10 }
+		opts.on('-t', "--top[=NUM]") { |n| $options[:top] = n ? n.to_i : 10 }
 		opts.on("-l", "--lang=LANG_ID") {|l| $options[:lang] = l }
 		opts.on("-q", "--qual=QUAL") {|q| $options[:qual] = q }
 	end.parse!
@@ -165,4 +171,5 @@ $hc.allowbadget = true
 
 progs_data = get_progs_urls(progname)
 log(progs_data, LOG_DEBUG)
+log(progs_data.map {|a| a[1]+" : "+a[2]}.join("\n"))
 progs_data.each {|p| dump_video(p[0], p[1], p[2]) }
