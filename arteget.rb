@@ -17,20 +17,17 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 require 'pp'
+require 'optparse'
 require 'uri'
 require 'libhttpclient'
 require 'rexml/document'
 include REXML
 
-# language for videos
-LANG="fr"
-QUALITY="hd"
-
 LOG_QUIET = 0
 LOG_NORMAL = 1
 LOG_DEBUG = 2
 
-$loglevel = LOG_NORMAL
+$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "hd"}
 
 def fatal(msg)
 	puts msg
@@ -38,11 +35,33 @@ def fatal(msg)
 end
 
 def log(msg, level=LOG_NORMAL)
-	puts msg if level <= $loglevel
+	puts msg if level <= $options[:log]
 end
 
-progname=ARGV.shift
-fatal("Program name needed") if not progname
+def print_usage
+	puts "Usage : arteget [-v] (--best=NUM|--top=NUM)|URL|program"
+end
+
+begin 
+	OptionParser.new do |opts|
+		opts.on('-v', "--verbose") { |v| $options[:log] = LOG_DEBUG }
+		opts.on('-b', "--best=NUM") { |n| $options[:best] = n.to_i }
+		opts.on('-t', "--top=NUM") { |n| $options[:top] = n.to_i }
+		opts.on("-l", "--lang=LANG_ID") {|l| $options[:lang] = l }
+		opts.on("-q", "--qual=QUAL") {|q| $options[:qual] = q }
+	end.parse!
+rescue OptionParser::InvalidOption	
+	puts $!
+	print_usage
+	exit
+end
+
+if ARGV.length == 0 && !$options[:best] && !$options[:top]
+	print_usage
+	exit
+elsif ARGV.length == 1
+	progname=ARGV.shift
+end
 
 hc = HttpClient.new("videos.arte.tv")
 hc.allowbadget = true
@@ -94,14 +113,14 @@ log("Getting video XML desc")
 videoref_content = hc.get(videoref_url).content
 log(videoref_content, LOG_DEBUG)
 ref_xml = Document.new(videoref_content)
-vid_lang_url = ref_xml.root.elements["videos/video[@lang='#{LANG}']"].attributes['ref']
+vid_lang_url = ref_xml.root.elements["videos/video[@lang='#{$options[:lang]}']"].attributes['ref']
 vid_lang_url.gsub!(/.*arte.tv/,'')
 log(vid_lang_url, LOG_DEBUG)
 
-log("Getting #{LANG} #{QUALITY} video XML desc")
+log("Getting #{$options[:lang]} #{$options[:qual]} video XML desc")
 vid_lang_xml_url = hc.get(vid_lang_url).content
 vid_lang_xml = Document.new(vid_lang_xml_url)
-rtmp_url = vid_lang_xml.root.elements["urls/url[@quality='#{QUALITY}']"].text
+rtmp_url = vid_lang_xml.root.elements["urls/url[@quality='#{$options[:qual]}']"].text
 log(rtmp_url, LOG_DEBUG)
 
 log("Dumping video : #{vid_id}.flv")
