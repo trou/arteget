@@ -74,7 +74,7 @@ def get_progs_urls(progname)
 	end
 	log("Getting index")
 
-	index = $hc.get('/fr/videos').content
+	index = $hc.get("/#{$options[:lang]}/videos").content
 	xml_url = index[/coverflowXmlUrl = "(.*)"/,1]
 
 	log(xml_url, LOG_DEBUG)
