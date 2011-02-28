@@ -23,19 +23,25 @@ require 'libhttpclient'
 require 'rexml/document'
 include REXML
 
+LOG_ERROR = -1
 LOG_QUIET = 0
 LOG_NORMAL = 1
 LOG_DEBUG = 2
 
 $options = {:log => LOG_NORMAL, :lang => "fr", :qual => "hd"}
 
-def fatal(msg)
-	puts msg
-	exit(1)
-end
 
 def log(msg, level=LOG_NORMAL)
 	puts msg if level <= $options[:log]
+end
+
+def error(msg)
+	log(msg, LOG_ERROR)
+end
+
+def fatal(msg)
+	error(msg)
+	exit(1)
 end
 
 def print_usage
@@ -101,7 +107,7 @@ def dump_video(page_url, title, teaser)
 	log("Trying to get #{title}, teaser : \"#{teaser}\"")
 	# ugly but the only way (?)
 	vid_id = page_url[/-(.*)\./,1]
-	return log("No video id in URL") if not vid_id
+	return error("No video id in URL") if not vid_id
 	return log("Already downloaded") if Dir["*#{vid_id}*"].length > 0 
 
 	log("Getting video page")
@@ -137,7 +143,7 @@ def dump_video(page_url, title, teaser)
 			when 0 then
 				log("Video successfully dumped")
 			when 1 then
-				return log("rtmpdump failed")
+				return error("rtmpdump failed")
 			when 2 then
 				log("rtmpdump exited, trying to resume")
 				exec("rtmpdump", "-e", "-q", "--swfVfy", player_url, "-o", "#{vid_id}.flv", "-r", rtmp_url)
@@ -147,6 +153,7 @@ end
 
 begin 
 	OptionParser.new do |opts|
+		opts.on('-q', "--quiet") { |v| $options[:log] = LOG_QUIET }
 		opts.on('-v', "--verbose") { |v| $options[:log] = LOG_DEBUG }
 		opts.on('-b', "--best[=NUM]") { |n| $options[:best] = n ? n.to_i : 10 }
 		opts.on('-t', "--top[=NUM]") { |n| $options[:top] = n ? n.to_i : 10 }
