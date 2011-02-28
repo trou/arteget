@@ -46,6 +46,7 @@ end
 
 def print_usage
 	puts "Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] --best[=NUM]|--top[=NUM]|URL|program"
+	puts "\t\t--quiet\t\tonly error output"
 	puts "\t-v\t--verbose\tdebug output"
 	puts "\t-q\t--qual=hd|sd\tchoose quality, sd or hd (default)"
 	puts "\t-l\t--lang=fr|de\tchoose language, german or french (default)"
@@ -153,7 +154,7 @@ end
 
 begin 
 	OptionParser.new do |opts|
-		opts.on('-q', "--quiet") { |v| $options[:log] = LOG_QUIET }
+		opts.on("--quiet") { |v| $options[:log] = LOG_QUIET }
 		opts.on('-v', "--verbose") { |v| $options[:log] = LOG_DEBUG }
 		opts.on('-b', "--best[=NUM]") { |n| $options[:best] = n ? n.to_i : 10 }
 		opts.on('-t', "--top[=NUM]") { |n| $options[:top] = n ? n.to_i : 10 }
