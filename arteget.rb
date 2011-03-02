@@ -97,10 +97,20 @@ def get_progs_urls(progname)
 		log("Getting top #{topnum} list page")
 		result = parse_xml(xml_url+"?hash=/tv/coverflow/popular/mostviewed/1/#{topnum}/")
 	else
-		log("Getting list page")
-		result = parse_xml(xml_url, progname)
+		result = parse_xml(xml_url+"?hash=/tv/coverflow/1/10000/", progname)
+		if result.length == 0
+			log("Could not find program in list, trying another way", LOG_DEBUG)
+
+			list_url = index[/listViewUrl: "(.*)"/,1]
+			fatal("Cannot find list") if not list_url
+
+			log("Getting list page")
+			list = $hc.get(list_url).content
+			url = list[/href="(.*\/#{progname}.*\.html)"/,1]
+			result << [url, progname ,""] if url
+		end
 	end
-	fatal("Cannot find requested program(s)") if not result
+	fatal("Cannot find requested program(s)") if result.length == 0
 	return result
 end
 
