@@ -19,10 +19,11 @@ Basic usage :
 	$ ./artget.rb --qual=sd --lang=de karambolage
 
 History :
-v1.1   : 2011/02/24
+v1.1   : 2011/03/06
 	 - options on the command line
 	 - reworked to use XML descriptions
 	 - top videos (views/ratings) support
+	 - quiet mode
 v1.01  : 2011/02/20
 	 - URL arg support
 	 - new site URL
