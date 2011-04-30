@@ -19,8 +19,8 @@
 require 'pp'
 require 'optparse'
 require 'uri'
-require 'libhttpclient'
 require 'rexml/document'
+require 'libhttpclient'
 include REXML
 
 LOG_ERROR = -1

@@ -19,6 +19,8 @@ Basic usage :
 	$ ./artget.rb --qual=sd --lang=de karambolage
 
 History :
+v1.11   : 2011/04/30
+	 - fix URL downloading bug
 v1.1   : 2011/03/06
 	 - options on the command line
 	 - reworked to use XML descriptions
