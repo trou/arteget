@@ -188,7 +188,6 @@ $hc = HttpClient.new("videos.arte.tv")
 $hc.allowbadget = true
 
 progs_data = get_progs_urls(progname)
-pp progs_data
 log(progs_data, LOG_DEBUG)
 log(progs_data.map {|a| a[1]+" : "+a[2]}.join("\n"))
 progs_data.each {|p| dump_video(p[0], p[1], p[2]) }
