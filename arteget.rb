@@ -105,6 +105,7 @@ def get_progs_urls(progname)
 			fatal("Cannot find list") if not list_url
 
 			log("Getting list page")
+			log(list_url, LOG_DEBUG)
 			list = $hc.get(list_url).content
 			url = list[/href="(.*\/#{progname}.*\.html)"/,1]
 			result << [url, progname ,""] if url
@@ -117,7 +118,7 @@ end
 def dump_video(page_url, title, teaser)
 	log("Trying to get #{title}, teaser : \"#{teaser}\"")
 	# ugly but the only way (?)
-	vid_id = page_url[/-(.*)\./,1]
+	vid_id = page_url[/-+(.*)\./,1]
 	return error("No video id in URL") if not vid_id
 	return log("Already downloaded") if Dir["*#{vid_id}*"].length > 0 
 
@@ -139,7 +140,12 @@ def dump_video(page_url, title, teaser)
 	log("Getting #{$options[:lang]} #{$options[:qual]} video XML desc")
 	vid_lang_xml_url = $hc.get(vid_lang_url).content
 	vid_lang_xml = Document.new(vid_lang_xml_url)
-	rtmp_url = vid_lang_xml.root.elements["urls/url[@quality='#{$options[:qual]}']"].text
+	rtmp_url = vid_lang_xml.root.elements["urls/url[@quality='#{$options[:qual]}']"]
+	if not rtmp_url then
+		return error("No such quality")
+	else
+		rtmp_url = rtmp_url.text
+	end
 	log(rtmp_url, LOG_DEBUG)
 
 	log("Dumping video : #{vid_id}.flv")
