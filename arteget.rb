@@ -19,9 +19,8 @@
 require 'pp'
 require 'optparse'
 require 'uri'
-require 'rexml/document'
+require 'json'
 require 'libhttpclient'
-include REXML
 
 LOG_ERROR = -1
 LOG_QUIET = 0
@@ -56,19 +55,9 @@ def print_usage
 	puts "\tprogram\t\t\tdownload the latest avaiable broadcasts of \"program\""
 end
 
-# Find videos in the given XML url, keeping only the given program if specified
-def parse_xml(xml_url, progname=nil)
-	xml_content = $hc.get(xml_url).content
-	xml = Document.new(xml_content)
-	result = []
-	xml.root.each_element("video") do |e|
-		if progname and e.get_text('title').to_s !~ /#{progname}/i
-			next
-		end
-		t=[e.get_text('targetUrl'),e.get_text('title'),e.get_text('teaserText')]
-		t.map! {|e| REXML::Text::unnormalize(e.to_s).gsub("\n","") }
-		result << t
-	end
+# Find videos in the given JSON array
+def parse_json(progs)
+	result = progs.map { |p| [p['url'], p['title'], p['desc']] }
 	return result
 end
 
@@ -79,39 +68,32 @@ def get_progs_urls(progname)
 		log("Trying with URL")
 		return [[progname, "", ""]]
 	end
-	log("Getting index")
+	log("Getting json")
 
-	index = $hc.get("/#{$options[:lang]}/videos").content
-	xml_url = index[/coverflowXmlUrl = "(.*)"/,1]
+	plus7 = $hc.get("/guide/#{$options[:lang]}/plus7.json").content
+    plus7_j = JSON.parse(plus7)
 
-	log(xml_url, LOG_DEBUG)
-	fatal("Cannot find index list") if not xml_url 
+	fatal("Cannot get program list JSON") if not plus7_j 
 
+    vids = plus7_j["videos"]
 	if $options[:best] then
 		bestnum = $options[:best]
-		log("Getting best #{bestnum} list page")
+		log("Computing best #{bestnum}")
 		# ohhh magic !
-		result = parse_xml(xml_url+"?hash=/tv/coverflow/popular/bestrated/1/#{bestnum}/")
+        fatal('TODO')
 	elsif $options[:top] then
 		topnum = $options[:top]
-		log("Getting top #{topnum} list page")
-		result = parse_xml(xml_url+"?hash=/tv/coverflow/popular/mostviewed/1/#{topnum}/")
+		log("Computing top #{topnum}")
+		# ohhh magic !
+        fatal('TODO')
 	else
-		result = parse_xml(xml_url+"?hash=/tv/coverflow/1/10000/", progname)
-		if result.length == 0
-			log("Could not find program in list, trying another way", LOG_DEBUG)
-
-			list_url = index[/listViewUrl: "(.*)"/,1]
-			fatal("Cannot find list") if not list_url
-
-			log("Getting list page")
-			log(list_url, LOG_DEBUG)
-			list = $hc.get(list_url).content
-			url = list[/href="(.*\/#{progname}.*\.html)"/,1]
-			result << [url, progname ,""] if url
-		end
+        # We have a program name
+        progs = vids.find_all {|p| p["title"].casecmp(progname) == 0 }
+        if progs != nil and progs.length > 0 then
+		    result = parse_json(progs) 
+        end
 	end
-	fatal("Cannot find requested program(s)") if result.length == 0
+	fatal("Cannot find requested program(s)") if result == nil or result.length == 0
 	return result
 end
 
@@ -190,7 +172,7 @@ elsif ARGV.length == 1
 	progname=ARGV.shift
 end
 
-$hc = HttpClient.new("videos.arte.tv")
+$hc = HttpClient.new("www.arte.tv")
 $hc.allowbadget = true
 
 progs_data = get_progs_urls(progname)
