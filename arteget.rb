@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # arteget 
-# Copyright 2008-2011 Raphaël Rigo
+# Copyright 2008-2013 Raphaël Rigo
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ def print_usage
 	puts "Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] --best[=NUM]|--top[=NUM]|URL|program"
 	puts "\t\t--quiet\t\tonly error output"
 	puts "\t-v\t--verbose\tdebug output"
-	puts "\t-q\t--qual=hd|sd\tchoose quality, sd or hd (default)"
+	puts "\t-q\t--qual=hd|md|sd|ld\tchoose quality, hd is default"
 	puts "\t-l\t--lang=fr|de\tchoose language, german or french (default)"
 	puts "\t-b\t--best[=NUM]\tdownload the NUM (10 default) best rated programs"
 	puts "\t-t\t--top[=NUM]\tdownload the NUM (10 default) most viewed programs"
@@ -100,41 +100,35 @@ end
 def dump_video(page_url, title, teaser)
 	log("Trying to get #{title}, teaser : \"#{teaser}\"")
 	# ugly but the only way (?)
-	vid_id = page_url[/-+(.*)\./,1]
+	vid_id = page_url[/\/([0-9]+-[0-9]+)\//,1]
 	return error("No video id in URL") if not vid_id
 	return log("Already downloaded") if Dir["*#{vid_id}*"].length > 0 
 
 	log("Getting video page")
 	page_video = $hc.get(page_url).content
-	videoref_url = page_video[/videorefFileUrl = "http:\/\/videos.arte.tv(.*\.xml)"/,1]
-	player_url = page_video[/url_player = "(.*\.swf)"/,1]
+	videoref_url = page_video[/arte_vp_url="http:\/\/arte.tv(.*PLUS7.*\.json)"/,1]
 	log(videoref_url, LOG_DEBUG) 
-	log(player_url, LOG_DEBUG) 
 
-	log("Getting video XML desc")
+	log("Getting video JSON desc")
 	videoref_content = $hc.get(videoref_url).content
 	log(videoref_content, LOG_DEBUG)
-	ref_xml = Document.new(videoref_content)
-	vid_lang_url = ref_xml.root.elements["videos/video[@lang='#{$options[:lang]}']"].attributes['ref']
-	vid_lang_url.gsub!(/.*arte.tv/,'')
-	log(vid_lang_url, LOG_DEBUG)
-
-	log("Getting #{$options[:lang]} #{$options[:qual]} video XML desc")
-	vid_lang_xml_url = $hc.get(vid_lang_url).content
-	vid_lang_xml = Document.new(vid_lang_xml_url)
-	rtmp_url = vid_lang_xml.root.elements["urls/url[@quality='#{$options[:qual]}']"]
+	vid_json = JSON.parse(videoref_content)
+    good = vid_json['videoJsonPlayer']["VSR"].values.find do |v|
+        v['quality'] =~ /^#{$options[:qual]}/i and
+        v['mediaType'] == 'rtmp' and
+        v['versionCode'] == 'VOF'
+    end
+    rtmp_url = good['streamer']+'mp4:'+good['url']
 	if not rtmp_url then
 		return error("No such quality")
-	else
-		rtmp_url = rtmp_url.text
 	end
 	log(rtmp_url, LOG_DEBUG)
 
-	log("Dumping video : #{vid_id}.flv")
 	filename = vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+".flv"
-	log("rtmpdump --swfVfy #{player_url} -o #{filename} -r \"#{rtmp_url}\"", LOG_DEBUG)
+	log("Dumping video : "+filename)
+	log("rtmpdump -o #{filename} -r \"#{rtmp_url}\"", LOG_DEBUG)
 	fork do 
-		exec("rtmpdump", "-q", "--swfVfy", player_url, "-o", filename, "-r", rtmp_url)
+		exec("rtmpdump", "-q", "-o", filename, "-r", rtmp_url)
 	end
 	Process.wait
 	if $?.exited?
