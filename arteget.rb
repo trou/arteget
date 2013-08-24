@@ -63,13 +63,9 @@ def parse_json(progs)
 	return result
 end
 
-# Basically gets the lists of programs in XML format
+# Basically gets the lists of programs in JSON format
 # returns an array of arrays, containing 3 strings : [url, title, teaser]
 def get_progs_urls(progname)
-	if progname =~ /^http:/ then
-		log("Trying with URL")
-		return [[progname, "", ""]]
-	end
 	log("Getting json")
 
 	plus7 = $hc.get("/guide/#{$options[:lang]}/plus7.json").content
@@ -78,6 +74,7 @@ def get_progs_urls(progname)
 	fatal("Cannot get program list JSON") if not plus7_j 
 
     vids = plus7_j["videos"]
+
 	if $options[:best] then
 		bestnum = $options[:best]
 		log("Computing best #{bestnum}")
@@ -116,7 +113,7 @@ def dump_video(page_url, title, teaser)
 	videoref_url = page_video[/arte_vp_url="http:\/\/arte.tv(.*PLUS7.*\.json)"/,1]
 	log(videoref_url, LOG_DEBUG) 
 
-	log("Getting video JSON desc")
+	log("Getting video description JSON")
 	videoref_content = $hc.get(videoref_url).content
 	log(videoref_content, LOG_DEBUG)
 	vid_json = JSON.parse(videoref_content)
@@ -128,12 +125,21 @@ def dump_video(page_url, title, teaser)
         log(title+" : "+teaser)
     end
 
+    ###
+    # Some information :
+    #   - quality is always "XX - res", where XX is HD/MD/SD/LD
+    #   - mediaType can be "rtmp" or "" for direct HTTP download
+    #   - versionProg can be '1' for native, '2' for the other langage and '8' for subbed
+    ###
     good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
         v['quality'] =~ /^#{$options[:qual]}/i and
         v['mediaType'] == 'rtmp' and
         v['versionProg'] == ($options[:subs] ? '8' : '1')
     end
-    if not good or good.length == 0 then 
+
+    # If we failed to find a subbed version, try normal
+    if not good or good.length == 0 and $options[:subs] then 
+        log("No subbed version ? Trying normal")
         good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
             v['quality'] =~ /^#{$options[:qual]}/i and
             v['mediaType'] == 'rtmp' and
@@ -202,6 +208,11 @@ end
 $hc = HttpClient.new("www.arte.tv")
 $hc.allowbadget = true
 
-progs_data = get_progs_urls(progname)
+if progname =~ /^http:/ then
+    log("Trying with URL")
+    progs_data = [[progname, "", ""]]
+else
+    progs_data = get_progs_urls(progname)
+end
 log(progs_data, LOG_DEBUG)
 progs_data.each {|p| dump_video(p[0], p[1], p[2]) }
