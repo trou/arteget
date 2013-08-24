@@ -102,7 +102,6 @@ def dump_video(page_url, title, teaser)
 	# ugly but the only way (?)
 	vid_id = page_url[/\/([0-9]+-[0-9]+)\//,1]
 	return error("No video id in URL") if not vid_id
-	return log("Already downloaded") if Dir["*#{vid_id}*"].length > 0 
 
 	log("Getting video page")
 	page_video = $hc.get(page_url).content
@@ -124,7 +123,8 @@ def dump_video(page_url, title, teaser)
 	end
 	log(rtmp_url, LOG_DEBUG)
 
-	filename = vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+".flv"
+	filename = vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".flv"
+	return log("Already downloaded") if File.exists?(filename)
 	log("Dumping video : "+filename)
 	log("rtmpdump -o #{filename} -r \"#{rtmp_url}\"", LOG_DEBUG)
 	fork do 
