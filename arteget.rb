@@ -127,7 +127,7 @@ def dump_video(page_url, title, teaser)
     good = vid_json['videoJsonPlayer']["VSR"].values.find do |v|
         v['quality'] =~ /^#{$options[:qual]}/i and
         v['mediaType'] == 'rtmp' and
-        v['versionCode'] == 'VOF'
+        v['versionCode'][0..1] == 'VO'
     end
 
     rtmp_url = good['streamer']+'mp4:'+good['url']
