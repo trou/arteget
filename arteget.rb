@@ -122,8 +122,7 @@ def dump_video(page_url, title, teaser)
 		return error("No such quality")
 	end
 	log(rtmp_url, LOG_DEBUG)
-
-	filename = vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".flv"
+	filename = $options[:filename] || vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".flv"
 	return log("Already downloaded") if File.exists?(filename)
 	log("Dumping video : "+filename)
 	log("rtmpdump -o #{filename} -r \"#{rtmp_url}\"", LOG_DEBUG)
@@ -152,6 +151,7 @@ begin
 		opts.on('-t', "--top[=NUM]") { |n| $options[:top] = n ? n.to_i : 10 }
 		opts.on("-l", "--lang=LANG_ID") {|l| $options[:lang] = l }
 		opts.on("-q", "--qual=QUAL") {|q| $options[:qual] = q }
+		opts.on("-o", "--output=filename") {|f| $options[:filename] = f }
 	end.parse!
 rescue OptionParser::InvalidOption	
 	puts $!
