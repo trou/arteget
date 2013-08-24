@@ -86,8 +86,6 @@ def get_progs_urls(progname)
 		log("Computing top #{topnum}")
         vids.sort! { |a, b| a["video_views"][/^[0-9 ]+/].gsub(' ','').to_i <=> b["video_views"][/^[0-9 ]+/].gsub(' ', '').to_i }.reverse!
         result = parse_json(vids[0,topnum])
-        pp result
-        fatal("coin")
 	else
         # We have a program name
         progs = vids.find_all {|p| p["title"].casecmp(progname) == 0 }
