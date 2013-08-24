@@ -27,7 +27,7 @@ LOG_QUIET = 0
 LOG_NORMAL = 1
 LOG_DEBUG = 2
 
-$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "hd"}
+$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "hd", :subs => false}
 
 
 def log(msg, level=LOG_NORMAL)
@@ -45,14 +45,16 @@ end
 
 def print_usage
 	puts "Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] --best[=NUM]|--top[=NUM]|URL|program"
-	puts "\t\t--quiet\t\tonly error output"
-	puts "\t-v\t--verbose\tdebug output"
+	puts "\t\t--quiet\t\t\tonly error output"
+	puts "\t-v\t--verbose\t\tdebug output"
+	puts "\t-f\t--force\t\t\toverwrite destination file"
+	puts "\t\t--subs\t\t\ttry do download subtitled version"
 	puts "\t-q\t--qual=hd|md|sd|ld\tchoose quality, hd is default"
-	puts "\t-l\t--lang=fr|de\tchoose language, german or french (default)"
-	puts "\t-b\t--best[=NUM]\tdownload the NUM (10 default) best rated programs"
-	puts "\t-t\t--top[=NUM]\tdownload the NUM (10 default) most viewed programs"
-	puts "\tURL\t\t\tdownload the video on this page"
-	puts "\tprogram\t\t\tdownload the latest avaiable broadcasts of \"program\""
+	puts "\t-l\t--lang=fr|de\t\tchoose language, german or french (default)"
+	puts "\t-b\t--best [NUM]\t\tdownload the NUM (10 default) best rated programs"
+	puts "\t-t\t--top [NUM]\t\tdownload the NUM (10 default) most viewed programs"
+	puts "\tURL\t\t\t\tdownload the video on this page"
+	puts "\tprogram\t\t\t\tdownload the latest avaiable broadcasts of \"program\""
 end
 
 # Find videos in the given JSON array
@@ -79,8 +81,10 @@ def get_progs_urls(progname)
 	if $options[:best] then
 		bestnum = $options[:best]
 		log("Computing best #{bestnum}")
-		# ohhh magic !
-        fatal('TODO')
+        ranked = vids.find_all { |v| v["video_rank"] != nil and v["video_rank"]  > 0 }
+        ranked.sort! { |a, b| a["video_rank"] <=> b["video_rank"] }.reverse!
+        pp ranked
+        result = parse_json(ranked[0,bestnum])
 	elsif $options[:top] then
 		topnum = $options[:top]
 		log("Computing top #{topnum}")
@@ -124,11 +128,22 @@ def dump_video(page_url, title, teaser)
         log(title+" : "+teaser)
     end
 
-    good = vid_json['videoJsonPlayer']["VSR"].values.find do |v|
+    good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
         v['quality'] =~ /^#{$options[:qual]}/i and
         v['mediaType'] == 'rtmp' and
-        v['versionCode'][0..1] == 'VO'
+        v['versionProg'] == ($options[:subs] ? '8' : '1')
     end
+    if not good or good.length == 0 then 
+        good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
+            v['quality'] =~ /^#{$options[:qual]}/i and
+            v['mediaType'] == 'rtmp' and
+            v['versionProg'] == '1'
+        end
+    end
+    if good.length > 1 then
+        log("Several version matching, downloading the first one")
+    end
+    good = good.first
 
     rtmp_url = good['streamer']+'mp4:'+good['url']
 	if not rtmp_url then
@@ -137,7 +152,7 @@ def dump_video(page_url, title, teaser)
 	log(rtmp_url, LOG_DEBUG)
 
 	filename = $options[:filename] || vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".flv"
-	return log("Already downloaded") if File.exists?(filename)
+	return log("Already downloaded") if File.exists?(filename) and not $options[:force]
 
 	log("Dumping video : "+filename)
 	log("rtmpdump -o #{filename} -r \"#{rtmp_url}\"", LOG_DEBUG)
@@ -162,7 +177,9 @@ end
 begin 
 	OptionParser.new do |opts|
 		opts.on("--quiet") { |v| $options[:log] = LOG_QUIET }
+		opts.on("--subs") {$options[:subs] = true }
 		opts.on('-v', "--verbose") { |v| $options[:log] = LOG_DEBUG }
+		opts.on('-f', "--force") { $options[:force] = true }
 		opts.on('-b', "--best [NUM]") { |n| $options[:best] = n ? n.to_i : 10 }
 		opts.on('-t', "--top [NUM]") { |n| $options[:top] = (n ? n.to_i : 10) }
 		opts.on("-l", "--lang=LANG_ID") {|l| $options[:lang] = l }

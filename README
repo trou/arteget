@@ -19,7 +19,11 @@ Basic usage :
 	$ ./artget.rb --qual=sd --lang=de karambolage
 
 History :
-v1.11   : 2011/04/30
+v2.0   : 2013/08/24
+     - rewritten for the new site, not compatible with
+       the old one.
+     - allow download of subtitled version
+v1.11  : 2011/04/30
 	 - fix URL downloading bug
 v1.1   : 2011/03/06
 	 - options on the command line
