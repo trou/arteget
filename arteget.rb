@@ -112,6 +112,10 @@ def dump_video(page_url, title, teaser)
 	page_video = $hc.get(page_url).content
 	videoref_url = page_video[/arte_vp_url="http:\/\/arte.tv(.*PLUS7.*\.json)"/,1]
 	log(videoref_url, LOG_DEBUG) 
+    if videoref_url == nil then
+        error("Cannot find the video")
+        return
+    end
 
 	log("Getting video description JSON")
 	videoref_content = $hc.get(videoref_url).content
