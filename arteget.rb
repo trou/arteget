@@ -122,13 +122,16 @@ def dump_video(page_url, title, teaser)
 		return error("No such quality")
 	end
 	log(rtmp_url, LOG_DEBUG)
+
 	filename = $options[:filename] || vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".flv"
 	return log("Already downloaded") if File.exists?(filename)
+
 	log("Dumping video : "+filename)
 	log("rtmpdump -o #{filename} -r \"#{rtmp_url}\"", LOG_DEBUG)
 	fork do 
 		exec("rtmpdump", "-q", "-o", filename, "-r", rtmp_url)
 	end
+
 	Process.wait
 	if $?.exited?
 		case $?.exitstatus
@@ -138,7 +141,7 @@ def dump_video(page_url, title, teaser)
 				return error("rtmpdump failed")
 			when 2 then
 				log("rtmpdump exited, trying to resume")
-				exec("rtmpdump", "-e", "-q", "--swfVfy", player_url, "-o", "#{vid_id}.flv", "-r", rtmp_url)
+				exec("rtmpdump", "-e", "-q", "-o", "#{vid_id}.flv", "-r", rtmp_url)
 		end
 	end
 end
