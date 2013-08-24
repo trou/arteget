@@ -98,7 +98,11 @@ def get_progs_urls(progname)
 end
 
 def dump_video(page_url, title, teaser)
-	log("Trying to get #{title}, teaser : \"#{teaser}\"")
+    if title == "" and teaser == "" then
+        log("Trying to get #{page_url}")
+    else
+        log("Trying to get #{title}, teaser : \"#{teaser}\"")
+    end
 	# ugly but the only way (?)
 	vid_id = page_url[/\/([0-9]+-[0-9]+)\//,1]
 	return error("No video id in URL") if not vid_id
@@ -112,11 +116,20 @@ def dump_video(page_url, title, teaser)
 	videoref_content = $hc.get(videoref_url).content
 	log(videoref_content, LOG_DEBUG)
 	vid_json = JSON.parse(videoref_content)
+
+    # Fill metadata if needed
+    if title == "" or teaser == "" then
+        title = vid_json['videoJsonPlayer']['VTI']
+        teaser = vid_json['videoJsonPlayer']['V7T']
+        log(title+" : "+teaser)
+    end
+
     good = vid_json['videoJsonPlayer']["VSR"].values.find do |v|
         v['quality'] =~ /^#{$options[:qual]}/i and
         v['mediaType'] == 'rtmp' and
         v['versionCode'] == 'VOF'
     end
+
     rtmp_url = good['streamer']+'mp4:'+good['url']
 	if not rtmp_url then
 		return error("No such quality")
@@ -174,5 +187,4 @@ $hc.allowbadget = true
 
 progs_data = get_progs_urls(progname)
 log(progs_data, LOG_DEBUG)
-log(progs_data.map {|a| a[1]+" : "+a[2]}.join("\n"))
 progs_data.each {|p| dump_video(p[0], p[1], p[2]) }
