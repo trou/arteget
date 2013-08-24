@@ -84,6 +84,8 @@ def get_progs_urls(progname)
 	elsif $options[:top] then
 		topnum = $options[:top]
 		log("Computing top #{topnum}")
+        vids.sort! { |a, b| a["video_views"][/^[0-9 ]+/].gsub(' ','').to_i <=> b["video_views"][/^[0-9 ]+/].gsub(' ', '').to_i }.reverse!
+        pp vids[0,topnum]
 		# ohhh magic !
         fatal('TODO')
 	else
@@ -164,7 +166,7 @@ begin
 		opts.on("--quiet") { |v| $options[:log] = LOG_QUIET }
 		opts.on('-v', "--verbose") { |v| $options[:log] = LOG_DEBUG }
 		opts.on('-b', "--best[=NUM]") { |n| $options[:best] = n ? n.to_i : 10 }
-		opts.on('-t', "--top[=NUM]") { |n| $options[:top] = n ? n.to_i : 10 }
+		opts.on('-t', "--top[=NUM]") { |n| $options[:top] = (n ? n.to_i : 10) }
 		opts.on("-l", "--lang=LANG_ID") {|l| $options[:lang] = l }
 		opts.on("-q", "--qual=QUAL") {|q| $options[:qual] = q }
 		opts.on("-o", "--output=filename") {|f| $options[:filename] = f }
