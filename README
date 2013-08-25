@@ -10,7 +10,7 @@ Basic usage :
 1) downloading the latest broadcasts of a given program :
 	$ ./arteget.rb karambolage
 2) downloading a single video :
-	$ ./arteget.rb http://videos.arte.tv/fr/videos/pret_a_jeter-3700234.html 
+	$ ./arteget.rb http://www.arte.tv/guide/fr/040347-001/le-cerveau-et-ses-automatismes-1-2
 3) downloading the 10 most viewed videos :
 	$ ./arteget.rb --top=10
 4) downloading the 10 best rated videos :
@@ -19,7 +19,7 @@ Basic usage :
 	$ ./artget.rb --qual=sd --lang=de karambolage
 
 History :
-v2.0   : 2013/08/24
+v2.0   : 2013/08/25
      - rewritten for the new site, not compatible with
        the old one.
      - allow download of subtitled version
