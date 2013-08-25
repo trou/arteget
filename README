@@ -2,7 +2,7 @@ arteget is a simple ruby script that dumps television programs from the "+7" sit
 
 It uses rtmpdump to dump streams to the disk. Be sure to have it in your PATH.
 This software uses libhttp by Yoann Guillot, which you can find here :
-http://guillot.iiens.net/softs/libhttp/
+http://github.com/jjyg/libhttpclient
 
 Thank you Yoann !
 
