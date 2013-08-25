@@ -54,7 +54,7 @@ def print_usage
 	puts "\t-b\t--best [NUM]\t\tdownload the NUM (10 default) best rated programs"
 	puts "\t-t\t--top [NUM]\t\tdownload the NUM (10 default) most viewed programs"
 	puts "\tURL\t\t\t\tdownload the video on this page"
-	puts "\tprogram\t\t\t\tdownload the latest avaiable broadcasts of \"program\""
+	puts "\tprogram\t\t\t\tdownload the latest available broadcasts of \"program\""
 end
 
 # Find videos in the given JSON array
