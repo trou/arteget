@@ -59,6 +59,8 @@ def print_usage
 	puts "\t\t--quiet\t\t\tonly error output"
 	puts "\t-v\t--verbose\t\tdebug output"
 	puts "\t-f\t--force\t\t\toverwrite destination file"
+	puts "\t-o\t--output=filename\t\t\tfilename if downloading only one program"
+	puts "\t-d\t--dest=directory\t\t\tdestination directory"
 	puts "\t\t--subs\t\t\ttry do download subtitled version"
 	puts "\t-q\t--qual=hd|md|sd|ld\tchoose quality, hd is default"
 	puts "\t-l\t--lang=fr|de\t\tchoose language, german or french (default)"
@@ -172,7 +174,10 @@ def dump_video(page_url, title, teaser)
 	end
 	log(rtmp_url, LOG_DEBUG)
 
-	filename = $options[:filename] || vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".flv"
+    if $options[:dest] then
+        filename = $options[:dest]+File::SEPARATOR
+    end
+	filename = filename + ($options[:filename] || vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".flv")
 	return log("Already downloaded") if File.exists?(filename) and not $options[:force]
 
 	log("Dumping video : "+filename)
@@ -206,6 +211,13 @@ begin
 		opts.on("-l", "--lang=LANG_ID") {|l| $options[:lang] = l }
 		opts.on("-q", "--qual=QUAL") {|q| $options[:qual] = q }
 		opts.on("-o", "--output=filename") {|f| $options[:filename] = f }
+		opts.on("-d", "--dest=directory")  do |d|
+            if not File.directory?(d)
+                puts "Destination is not a directory"
+                exit 1
+            end
+            $options[:dest] = d
+        end
 	end.parse!
 rescue OptionParser::InvalidOption	
 	puts $!
