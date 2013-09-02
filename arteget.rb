@@ -43,6 +43,17 @@ def fatal(msg)
 	exit(1)
 end
 
+def which(cmd)
+  exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
+  ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+    exts.each { |ext|
+      exe = File.join(path, "#{cmd}#{ext}")
+      return exe if File.executable? exe
+    }
+  end
+  return nil
+end
+
 def print_usage
 	puts "Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] --best[=NUM]|--top[=NUM]|URL|program"
 	puts "\t\t--quiet\t\t\tonly error output"
@@ -207,6 +218,11 @@ if ARGV.length == 0 && !$options[:best] && !$options[:top]
 	exit
 elsif ARGV.length == 1
 	progname=ARGV.shift
+end
+
+if not which("rtmpdump")
+    puts "rtmpdump not found"
+    exit 1
 end
 
 $hc = HttpClient.new("www.arte.tv")
