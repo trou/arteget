@@ -234,5 +234,6 @@ if progname =~ /^http:/ then
 else
     progs_data = get_progs_urls(progname)
 end
+puts "Dumping #{progs_data.length} program(s)"
 log(progs_data, LOG_DEBUG)
 progs_data.each {|p| dump_video(p[0], p[1], p[2]) }
