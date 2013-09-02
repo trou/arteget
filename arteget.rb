@@ -176,6 +176,8 @@ def dump_video(page_url, title, teaser)
 
     if $options[:dest] then
         filename = $options[:dest]+File::SEPARATOR
+    else
+        filename = ""
     end
 	filename = filename + ($options[:filename] || vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".flv")
 	return log("Already downloaded") if File.exists?(filename) and not $options[:force]
