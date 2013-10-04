@@ -22,6 +22,9 @@ Basic usage :
 	$ ./artget.rb --qual=sd --lang=de karambolage
 
 History :
+v2.1   :
+     - check for rtmpdump at startup
+     - option to specify destination directory
 v2.0   : 2013/08/25
      - rewritten for the new site, not compatible with
        the old one.
