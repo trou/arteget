@@ -22,6 +22,8 @@ Basic usage :
 	$ ./artget.rb --qual=sd --lang=de karambolage
 
 History :
+v2.x   :
+     - description file dumping
 v2.1   :
      - check for rtmpdump at startup
      - option to specify destination directory
