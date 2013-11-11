@@ -27,7 +27,7 @@ LOG_QUIET = 0
 LOG_NORMAL = 1
 LOG_DEBUG = 2
 
-$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "hd", :subs => false}
+$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "hd", :subs => false, :desc => false}
 
 
 def log(msg, level=LOG_NORMAL)
@@ -61,6 +61,7 @@ def print_usage
 	puts "\t-f\t--force\t\t\toverwrite destination file"
 	puts "\t-o\t--output=filename\t\t\tfilename if downloading only one program"
 	puts "\t-d\t--dest=directory\t\t\tdestination directory"
+	puts "\t-D\t--description\t\t\tsave description along with the file"
 	puts "\t\t--subs\t\t\ttry do download subtitled version"
 	puts "\t-q\t--qual=hd|md|sd|ld\tchoose quality, hd is default"
 	puts "\t-l\t--lang=fr|de\t\tchoose language, german or french (default)"
@@ -182,6 +183,14 @@ def dump_video(page_url, title, teaser)
 	filename = filename + ($options[:filename] || vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".flv")
 	return log("Already downloaded") if File.exists?(filename) and not $options[:force]
 
+    if $options[:desc] then
+        log("Dumping description : "+filename+".txt")
+        d = File.open(filename+".txt", "wt")
+        d.write(Time.now()+"\n")
+        d.write(title+"\n"+teaser);
+        d.close()
+    end
+
 	log("Dumping video : "+filename)
 	log("rtmpdump -o #{filename} -r \"#{rtmp_url}\"", LOG_DEBUG)
 	fork do 
@@ -206,6 +215,7 @@ begin
 	OptionParser.new do |opts|
 		opts.on("--quiet") { |v| $options[:log] = LOG_QUIET }
 		opts.on("--subs") {$options[:subs] = true }
+		opts.on('-D', "--description") { |v| $options[:desc] = true }
 		opts.on('-v', "--verbose") { |v| $options[:log] = LOG_DEBUG }
 		opts.on('-f', "--force") { $options[:force] = true }
 		opts.on('-b', "--best [NUM]") { |n| $options[:best] = n ? n.to_i : 10 }
