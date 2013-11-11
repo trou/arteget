@@ -187,7 +187,7 @@ def dump_video(page_url, title, teaser)
         log("Dumping description : "+filename+".txt")
         d = File.open(filename+".txt", "wt")
         d.write(Time.now().to_s+"\n")
-        d.write(title+"\n"+teaser);
+        d.write(title+"\n"+teaser+"\n");
         d.close()
     end
 
