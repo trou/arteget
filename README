@@ -21,9 +21,13 @@ Basic usage :
 5) downloading in german, standard quality :
 	$ ./artget.rb --qual=sd --lang=de karambolage
 
+Protip :
+You can list current program titles by using "list" as a program name.
+
 History :
 v2.x   :
      - description file dumping
+     - program listing
 v2.1   :
      - check for rtmpdump at startup
      - option to specify destination directory
