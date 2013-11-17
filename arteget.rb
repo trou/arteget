@@ -68,7 +68,7 @@ def print_usage
 	puts "\t-b\t--best [NUM]\t\tdownload the NUM (10 default) best rated programs"
 	puts "\t-t\t--top [NUM]\t\tdownload the NUM (10 default) most viewed programs"
 	puts "\tURL\t\t\t\tdownload the video on this page"
-	puts "\tprogram\t\t\t\tdownload the latest available broadcasts of \"program\""
+	puts "\tprogram\t\t\t\tdownload the latest available broadcasts of \"program\", use \"list\" to list available program names."
 end
 
 # Find videos in the given JSON array
@@ -85,7 +85,7 @@ def get_progs_urls(progname)
 	plus7 = $hc.get("/guide/#{$options[:lang]}/plus7.json").content
     plus7_j = JSON.parse(plus7)
 
-	fatal("Cannot get program list JSON") if not plus7_j 
+	fatal("Cannot get program list JSON") if not plus7_j
 
     vids = plus7_j["videos"]
 
@@ -211,6 +211,23 @@ def dump_video(page_url, title, teaser)
 	end
 end
 
+def list_progs()
+	log("Getting json")
+
+    log("/guide/#{$options[:lang]}/plus7.json", LOG_DEBUG)
+
+	plus7 = $hc.get("/guide/#{$options[:lang]}/plus7.json").content
+    plus7_j = JSON.parse(plus7)
+
+	fatal("Cannot get program list JSON") if not plus7_j
+
+    vids = plus7_j["videos"]
+    vids.map! { |v| v["title"] }
+    vids.sort!.uniq!
+    puts "Available program titles : "
+    puts vids.join("\n")
+end
+
 begin 
 	OptionParser.new do |opts|
 		opts.on("--quiet") { |v| $options[:log] = LOG_QUIET }
@@ -252,12 +269,17 @@ end
 $hc = HttpClient.new("www.arte.tv")
 $hc.allowbadget = true
 
-if progname =~ /^http:/ then
-    log("Trying with URL")
-    progs_data = [[progname, "", ""]]
-else
-    progs_data = get_progs_urls(progname)
-end
+case progname
+    when /^http:/
+        log("Trying with URL")
+        progs_data = [[progname, "", ""]]
+    when "list"
+        list_progs
+        exit(0)
+    else
+        progs_data = get_progs_urls(progname)
+    end
+
 puts "Dumping #{progs_data.length} program(s)"
 log(progs_data, LOG_DEBUG)
 progs_data.each {|p| dump_video(p[0], p[1], p[2]) }
