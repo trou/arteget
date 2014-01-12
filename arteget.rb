@@ -137,9 +137,9 @@ def dump_video(page_url, title, teaser)
 	vid_json = JSON.parse(videoref_content)
 
     # Fill metadata if needed
-    if title == "" or teaser == "" then
-        title = vid_json['videoJsonPlayer']['VTI']
-        teaser = vid_json['videoJsonPlayer']['V7T']
+    if title == "" or teaser == "" or not teaser or not title then
+        title = title || vid_json['videoJsonPlayer']['VTI'] || ""
+        teaser = vid_json['videoJsonPlayer']['V7T'] || vid_json['videoJsonPlayer']['VDE'] || ""
         log(title+" : "+teaser)
     end
 
