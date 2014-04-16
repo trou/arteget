@@ -169,11 +169,13 @@ def dump_video(page_url, title, teaser)
     end
     good = good.first
 
-    rtmp_url = good['streamer']+'mp4:'+good['url']
-	if not rtmp_url then
+    rtmp_tcUrl = good['streamer']
+    rtmp_playPath = 'mp4:'+good['url']
+	if not rtmp_tcUrl then
 		return error("No such quality")
 	end
-	log(rtmp_url, LOG_DEBUG)
+	log(rtmp_tcUrl, LOG_DEBUG)
+	log(rtmp_playPath, LOG_DEBUG)
 
     if $options[:dest] then
         filename = $options[:dest]+File::SEPARATOR
@@ -192,9 +194,9 @@ def dump_video(page_url, title, teaser)
     end
 
 	log("Dumping video : "+filename)
-	log("rtmpdump -o #{filename} -r \"#{rtmp_url}\"", LOG_DEBUG)
+	log("rtmpdump -o #{filename} -r  \"#{rtmp_tcUrl}\" -t \"#{rtmp_tcUrl}\" -y  \"#{rtmp_playPath}\"", LOG_DEBUG)
 	fork do 
-		exec("rtmpdump", "-q", "-o", filename, "-r", rtmp_url)
+		exec("rtmpdump", "-q", "-o", filename, "-r", rtmp_tcUrl, "-t", rtmp_tcUrl, '-y', rtmp_playPath)
 	end
 
 	Process.wait
@@ -206,7 +208,7 @@ def dump_video(page_url, title, teaser)
 				return error("rtmpdump failed")
 			when 2 then
 				log("rtmpdump exited, trying to resume")
-				exec("rtmpdump", "-e", "-q", "-o", "#{vid_id}.flv", "-r", rtmp_url)
+		        exec("rtmpdump", "-e", "-q", "-o", filename, "-r", rtmp_tcUrl, "-t", rtmp_tcUrl, '-y', rtmp_playPath)
 		end
 	end
 end
