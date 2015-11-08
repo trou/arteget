@@ -100,6 +100,9 @@ def get_progs_ids(progname)
         progs = progs.find_all {|p| p["title"].casecmp(progname) == 0 }
         if progs != nil and progs.length > 0 then
 		    p = progs.first['permalink']
+            if not p =~ /www.arte.tv/ then
+                fatal("Not on main arte site, won't work :(")
+            end
             prog_c = HttpClient.new(p)
             prog_content = prog_c.get(p).content
             article = prog_content.lines.find {|l| l =~ /article.*about=.*has-video/}
