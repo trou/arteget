@@ -123,12 +123,14 @@ def dump_video(video_id, title, teaser)
     end
     if video_id =~ /:\/\// then
         # ugly but the only way (?)
-        vid_id = page_url[/-([0-9]+-[0-9]+)/,1]
+        pp video_id
+        vid_id = video_id[/([0-9]{6}-[0-9]{3})/,1]
         return error("No video id in URL") if not vid_id
     else
         vid_id = video_id
     end
 
+    pp vid_id
 	log("Getting video description JSON")
     videoconf = "/api/player/v1/config/fr/#{vid_id}-A?vector=ARTETV"
 	log("https://api.arte.tv/"+videoconf, LOG_DEBUG) 
