@@ -152,7 +152,8 @@ def dump_video(page_url, title, teaser)
     good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
         v['quality'] =~ /^#{$options[:qual]}/i and
         v['mediaType'] == 'rtmp' and
-        v['versionProg'] == ($options[:subs] ? '8' : '1')
+        (v['versionProg'] == ($options[:subs] ? '8' : '1') or
+         v['versionProg'] == ($options[:subs] ? '3' : '1'))
     end
 
     # If we failed to find a subbed version, try normal
