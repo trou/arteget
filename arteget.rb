@@ -78,17 +78,11 @@ def parse_json(progs)
 end
 
 # Basically gets the lists of programs in JSON format
-# returns an array of arrays, containing 3 strings : [url, title, teaser]
-def get_progs_urls(progname)
-	log("Getting json")
+# returns an array of arrays, containing 2 strings : [video_id, title]
+def get_progs_ids(progname)
+    progs = get_progs_json()
 
-	plus7 = $hc.get("/guide/#{$options[:lang]}/plus7.json").content
-    plus7_j = JSON.parse(plus7)
-
-	fatal("Cannot get program list JSON") if not plus7_j
-
-    vids = plus7_j["videos"]
-
+    #TODO : fix
 	if $options[:best] then
 		bestnum = $options[:best]
 		log("Computing best #{bestnum}")
@@ -103,24 +97,34 @@ def get_progs_urls(progname)
         result = parse_json(vids[0,topnum])
 	else
         # We have a program name
-        progs = vids.find_all {|p| p["title"].casecmp(progname) == 0 }
+        progs = progs.find_all {|p| p["title"].casecmp(progname) == 0 }
         if progs != nil and progs.length > 0 then
-		    result = parse_json(progs) 
+		    p = progs.first['permalink']
+            prog_c = HttpClient.new(p)
+            prog_content = prog_c.get(p).content
+            article = prog_content.lines.find {|l| l =~ /article.*about=.*has-video/}
+	        log(article, LOG_DEBUG) 
+            url = article[/about="\/.*?-([0-9]+-[0-9]+)"/,1]
+            result = [[url, progname]]
         end
 	end
 	fatal("Cannot find requested program(s)") if result == nil or result.length == 0
 	return result
 end
 
-def dump_video(page_url, title, teaser)
+def dump_video(video_id, title, teaser)
     if title == "" and teaser == "" then
-        log("Trying to get #{page_url}")
+        log("Trying to get #{video_id}")
     else
-        log("Trying to get #{title}, teaser : \"#{teaser}\"")
+        log("Trying to get #{title}")
     end
-	# ugly but the only way (?)
-	vid_id = page_url[/-([0-9]+-[0-9]+)/,1]
-	return error("No video id in URL") if not vid_id
+    if video_id =~ /:\/\// then
+        # ugly but the only way (?)
+        vid_id = page_url[/-([0-9]+-[0-9]+)/,1]
+        return error("No video id in URL") if not vid_id
+    else
+        vid_id = video_id
+    end
 
 	log("Getting video description JSON")
     videoconf = "/api/player/v1/config/fr/#{vid_id}-A?vector=ARTETV"
@@ -137,7 +141,6 @@ def dump_video(page_url, title, teaser)
         log(title+" : "+teaser)
     end
 
-    pp $options
     ###
     # Some information :
     #   - mediaType can be "mp4" or "hls" 
@@ -149,7 +152,6 @@ def dump_video(page_url, title, teaser)
         (v['versionProg'].to_i == ($options[:subs] ? 8 : 1) or
          v['versionProg'].to_i == ($options[:subs] ? 3 : 1))
     end
-    pp good
 
     # If we failed to find a subbed version, try normal
     if not good or good.length == 0 and $options[:subs] then 
@@ -207,21 +209,26 @@ def dump_video(page_url, title, teaser)
 	end
 end
 
+def get_progs_json()
+	log("Getting index")
+
+    log("/guide/#{$options[:lang]}/plus7/", LOG_DEBUG)
+
+	plus7 = $hc.get("/guide/#{$options[:lang]}/plus7/").content
+    progs = plus7.lines.find {|a| a=~/clusters:/}.gsub('clusters:','')
+
+	fatal("Cannot get program list JSON") if not progs
+
+    progs = JSON.parse(progs)
+    return progs
+end
+
 def list_progs()
-	log("Getting json")
-
-    log("/guide/#{$options[:lang]}/plus7.json", LOG_DEBUG)
-
-	plus7 = $hc.get("/guide/#{$options[:lang]}/plus7.json").content
-    plus7_j = JSON.parse(plus7)
-
-	fatal("Cannot get program list JSON") if not plus7_j
-
-    vids = plus7_j["videos"]
-    vids.map! { |v| v["title"] }
-    vids.sort!.uniq!
+    progs = get_progs_json()
+    progs.map! { |v| v["title"] }
+    progs.sort!.uniq!
     puts "Available program titles : "
-    puts vids.join("\n")
+    puts progs.join("\n")
 end
 
 begin 
@@ -276,7 +283,7 @@ case progname
         list_progs
         exit(0)
     else
-        progs_data = get_progs_urls(progname)
+        progs_data = get_progs_ids(progname)
     end
 
 puts "Dumping #{progs_data.length} program(s)"
