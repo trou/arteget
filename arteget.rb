@@ -27,7 +27,7 @@ LOG_QUIET = 0
 LOG_NORMAL = 1
 LOG_DEBUG = 2
 
-$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "hd", :subs => false, :desc => false}
+$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :subs => false, :desc => false}
 
 
 def log(msg, level=LOG_NORMAL)
@@ -63,7 +63,7 @@ def print_usage
 	puts "\t-d\t--dest=directory\t\t\tdestination directory"
 	puts "\t-D\t--description\t\t\tsave description along with the file"
 	puts "\t\t--subs\t\t\ttry do download subtitled version"
-	puts "\t-q\t--qual=hd|md|sd|ld\tchoose quality, hd is default"
+	puts "\t-q\t--qual=sq|eq|mq\tchoose quality, sq is default"
 	puts "\t-l\t--lang=fr|de\t\tchoose language, german or french (default)"
 	puts "\t-b\t--best [NUM]\t\tdownload the NUM (10 default) best rated programs"
 	puts "\t-t\t--top [NUM]\t\tdownload the NUM (10 default) most viewed programs"
@@ -119,22 +119,16 @@ def dump_video(page_url, title, teaser)
         log("Trying to get #{title}, teaser : \"#{teaser}\"")
     end
 	# ugly but the only way (?)
-	vid_id = page_url[/\/([0-9]+-[0-9]+)\//,1]
+	vid_id = page_url[/-([0-9]+-[0-9]+)/,1]
 	return error("No video id in URL") if not vid_id
 
-	log("Getting video page")
-	page_video = $hc.get(page_url).content
-	videoref_url = page_video[/arte_vp_url=["']http:\/\/arte.tv(.*PLUS7.*\.json)["']/,1]
-	log(videoref_url, LOG_DEBUG) 
-    if videoref_url == nil then
-        error("Cannot find the video")
-        return
-    end
-
 	log("Getting video description JSON")
-	videoref_content = $hc.get(videoref_url).content
-	log(videoref_content, LOG_DEBUG)
-	vid_json = JSON.parse(videoref_content)
+    videoconf = "/api/player/v1/config/fr/#{vid_id}-A?vector=ARTETV"
+	log("https://api.arte.tv/"+videoconf, LOG_DEBUG) 
+
+	videoconf_content = $hc.get(videoconf).content
+	log(videoconf_content, LOG_DEBUG)
+	vid_json = JSON.parse(videoconf_content)
 
     # Fill metadata if needed
     if title == "" or teaser == "" or not teaser or not title then
@@ -143,47 +137,46 @@ def dump_video(page_url, title, teaser)
         log(title+" : "+teaser)
     end
 
+    pp $options
     ###
     # Some information :
-    #   - quality is always "XX - res", where XX is HD/MD/SD/LD
-    #   - mediaType can be "rtmp" or "" for direct HTTP download
+    #   - mediaType can be "mp4" or "hls" 
     #   - versionProg can be '1' for native, '2' for the other langage and '8' for subbed
     ###
     good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
         v['quality'] =~ /^#{$options[:qual]}/i and
-        v['mediaType'] == 'rtmp' and
-        (v['versionProg'] == ($options[:subs] ? '8' : '1') or
-         v['versionProg'] == ($options[:subs] ? '3' : '1'))
+        v['mediaType'] == 'mp4' and
+        (v['versionProg'].to_i == ($options[:subs] ? 8 : 1) or
+         v['versionProg'].to_i == ($options[:subs] ? 3 : 1))
     end
+    pp good
 
     # If we failed to find a subbed version, try normal
     if not good or good.length == 0 and $options[:subs] then 
         log("No subbed version ? Trying normal")
         good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
             v['quality'] =~ /^#{$options[:qual]}/i and
-            v['mediaType'] == 'rtmp' and
-            v['versionProg'] == '1'
+            v['mediaType'] == 'mp4' and
+            v['versionProg'].to_i == 1
         end
     end
     if good.length > 1 then
         log("Several version matching, downloading the first one")
     end
     good = good.first
-
-    rtmp_tcUrl = good['streamer']
-    rtmp_playPath = 'mp4:'+good['url']
-	if not rtmp_tcUrl then
+    
+    wget_url = good['url']
+	if not wget_url then
 		return error("No such quality")
 	end
-	log(rtmp_tcUrl, LOG_DEBUG)
-	log(rtmp_playPath, LOG_DEBUG)
+	log(wget_url, LOG_DEBUG)
 
     if $options[:dest] then
         filename = $options[:dest]+File::SEPARATOR
     else
         filename = ""
     end
-	filename = filename + ($options[:filename] || vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".flv")
+	filename = filename + ($options[:filename] || vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".mp4")
 	return log("Already downloaded") if File.exists?(filename) and not $options[:force]
 
     if $options[:desc] then
@@ -195,9 +188,9 @@ def dump_video(page_url, title, teaser)
     end
 
 	log("Dumping video : "+filename)
-	log("rtmpdump -o #{filename} -r  \"#{rtmp_tcUrl}\" -t \"#{rtmp_tcUrl}\" -y  \"#{rtmp_playPath}\"", LOG_DEBUG)
+	log("wget -O #{filename} \"#{wget_url}\"", LOG_DEBUG)
 	fork do 
-		exec("rtmpdump", "-q", "-o", filename, "-r", rtmp_tcUrl, "-t", rtmp_tcUrl, '-y', rtmp_playPath)
+		exec("wget", "-O", filename, wget_url)
 	end
 
 	Process.wait
@@ -206,10 +199,10 @@ def dump_video(page_url, title, teaser)
 			when 0 then
 				log("Video successfully dumped")
 			when 1 then
-				return error("rtmpdump failed")
+				return error("wget failed")
 			when 2 then
-				log("rtmpdump exited, trying to resume")
-		        exec("rtmpdump", "-e", "-q", "-o", filename, "-r", rtmp_tcUrl, "-t", rtmp_tcUrl, '-y', rtmp_playPath)
+				log("wget exited, trying to resume")
+                exec("wget", "-c", "-O", filename, wget_url)
 		end
 	end
 end
@@ -271,6 +264,9 @@ end
 
 $hc = HttpClient.new("www.arte.tv")
 $hc.allowbadget = true
+
+$api = HttpClient.new("https://api.arte.tv/")
+$api.allowbadget = false
 
 case progname
     when /^http:/
