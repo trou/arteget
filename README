@@ -25,6 +25,8 @@ Protip :
 You can list current program titles by using "list" as a program name.
 
 History :
+v2.4   : 2015/11/08
+     - fix basic functionnalities with new site, still buggy
 v2.3   : 2014/09/20
      - fix page parsing
      - fix rtmpdump invocation
@@ -56,26 +58,6 @@ v1.0  : 2010/06/13
 
 v0.1  :  2008/XX/XX 
 	 - First "release"
-
-Arte seems to have implemented some online check with GETS on the streaming 
-server to keep the streaming alive, but apparently it's just statistics.
-The code is there in case it is useful :
-
-url = "doLog?securityCheck=957HOP79HSPJX&sLogId="+Time.now.to_i.to_s+"&eName=Philosophie&aCtx=VIDEOTHEK%2DPLAYER&eId="+vid_id+"&logPlay=false&dt=0&action=PLAYING&tCode="
-pp url
-th = Thread.new do
-	logid=(Time.now.to_i*1000+354).to_s
-	url = "doLog?securityCheck=957HOP79HSPJX&sLogId="+logid+"&eName=Philosophie&aCtx=VIDEOTHEK%2DPLAYER&eId="+vid_id+"&logPlay=false&dt=0&action=PLAYING&tCode="
-	cnt = 0
-	log = HttpClient.new("medialog.arte.tv",1)
-	log.get("doLog?securityCheck=957HOP79HSPJX&sLogId="+logid+"&eName=Philosophie&aCtx=VIDEOTHEK%2DPLAYER&eId="+vid_id+"&logPlay=false&dt=0&action=PLAY&tCode=0")
-	loop do
-		puts url+cnt.to_s
-		log.get(url+cnt.to_s)
-		sleep(10)
-		cnt += 10
-	end
-end
 
 Contact me by mail :
 mailbox : devel-arteget
