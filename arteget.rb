@@ -148,6 +148,10 @@ def dump_video(video_id, title, teaser)
 	log("https://api.arte.tv/"+videoconf, LOG_DEBUG) 
 
 	videoconf_content = $hc.get(videoconf).content
+    if videoconf_content =~ /plus disponible/ then
+        videoconf = "/api/player/v1/config/fr/#{vid_id}-F?vector=ARTETV"
+        videoconf_content = $hc.get(videoconf).content
+    end
 	log(videoconf_content, LOG_DEBUG)
 	vid_json = JSON.parse(videoconf_content)
 
