@@ -131,6 +131,12 @@ def dump_video(video_id, title, teaser)
         # ugly but the only way (?)
         pp video_id
         vid_id = video_id[/([0-9]{6}-[0-9]{3})/,1]
+        if not vid_id then
+            page = $hc.get(video_id).content
+            vid = page.lines.find {|l| l =~ /arte_vp_url/}
+            log(vid, LOG_DEBUG)
+            vid_id = vid[/\/fr\/([0-9]+-[0-9]+)-/,1]
+        end
         return error("No video id in URL") if not vid_id
     else
         vid_id = video_id
