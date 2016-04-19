@@ -111,10 +111,9 @@ def get_progs_ids(progname)
             url = article[/about="\/.*?-([0-9]+-[0-9]+)"/,1]
             if not url then
                 vid = prog_content.lines.find {|l| l =~ /arte_vp_url/}
-                pp vid
                 url = vid[/\/fr\/([0-9]+-[0-9]+)-/,1]
             end
-            pp url
+            log("Vid ID"+url, LOG_DEBUG)
             result = [[url, progname]]
         end
 	end
