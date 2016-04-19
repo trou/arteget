@@ -105,9 +105,16 @@ def get_progs_ids(progname)
             end
             prog_c = HttpClient.new(p)
             prog_content = prog_c.get(p).content
+            log(prog_content, LOG_DEBUG)
             article = prog_content.lines.find {|l| l =~ /article.*about=.*has-video/}
 	        log(article, LOG_DEBUG) 
             url = article[/about="\/.*?-([0-9]+-[0-9]+)"/,1]
+            if not url then
+                vid = prog_content.lines.find {|l| l =~ /arte_vp_url/}
+                pp vid
+                url = vid[/\/fr\/([0-9]+-[0-9]+)-/,1]
+            end
+            pp url
             result = [[url, progname]]
         end
 	end
