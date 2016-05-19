@@ -1,9 +1,6 @@
 arteget is a simple ruby script that dumps television programs from the "+7" site of Arte.
 
 It uses wget to dump streams to the disk. Be sure to have it in your PATH.
-This software uses libhttp by Yoann Guillot, which you can find here :
-http://github.com/jjyg/libhttpclient
-Thank you Yoann !
 
 Known issues :
 Note that if the program name contains accents, such as "Téléchat", your shell
@@ -25,6 +22,9 @@ Protip :
 You can list current program titles by using "list" as a program name.
 
 History :
+v2.5   : 2016/xx/xx
+     - now use Net:HTTP
+     - more or less compatible with new site
 v2.4   : 2015/11/08
      - fix basic functionnalities with new site, still buggy
      - now uses wget instead of rtmpdump

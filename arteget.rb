@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
-# arteget 
-# Copyright 2008-2013 Raphaël Rigo
+# arteget
+# Copyright 2008-2016 RaphaÃ«l Rigo
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ require 'pp'
 require 'optparse'
 require 'uri'
 require 'json'
-require 'libhttpclient'
+require 'net/http'
 
 LOG_ERROR = -1
 LOG_QUIET = 0
@@ -29,6 +29,24 @@ LOG_DEBUG = 2
 
 $options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :subs => false, :desc => false}
 
+
+def fetch(uri_str, limit = 10)
+  # You should choose a better exception.
+  raise ArgumentError, 'too many HTTP redirects' if limit == 0
+
+  response = Net::HTTP.get_response(URI(uri_str))
+
+  case response
+  when Net::HTTPSuccess then
+    response.body
+  when Net::HTTPRedirection then
+    location = response['location']
+    warn "redirected to #{location}"
+    fetch(location, limit - 1)
+  else
+    response.value
+  end
+end
 
 def log(msg, level=LOG_NORMAL)
 	puts msg if level <= $options[:log]
@@ -104,17 +122,17 @@ def get_progs_ids(progname)
             if not p =~ /www.arte.tv/ then
                 fatal("Not on main arte site, won't work :(")
             end
-            prog_c = HttpClient.new(p)
-            prog_content = prog_c.get(p).content
-            log(prog_content, LOG_DEBUG)
+            prog_content = fetch(p)
+            #log(prog_content, LOG_DEBUG)
             article = prog_content.lines.find {|l| l =~ /article.*about=.*has-video/}
-	        log(article, LOG_DEBUG) 
+	        log(article, LOG_DEBUG)
             url = article[/about="\/.*?-([0-9]+-[0-9]+)"/,1]
             if not url then
                 vid = prog_content.lines.find {|l| l =~ /arte_vp_url/}
+	            log(vid, LOG_DEBUG)
                 url = vid[/\/fr\/([0-9]+-[0-9]+)-/,1]
             end
-            log("Vid ID"+url, LOG_DEBUG)
+            log("Vid ID : "+url, LOG_DEBUG)
             result = [[url, progname]]
         end
 	end
@@ -133,7 +151,7 @@ def dump_video(video_id, title, teaser)
         pp video_id
         vid_id = video_id[/([0-9]{6}-[0-9]{3})/,1]
         if not vid_id then
-            page = $hc.get(video_id).content
+            page = fetch(video_id)
             vid = page.lines.find {|l| l =~ /arte_vp_url/}
             log(vid, LOG_DEBUG)
             vid_id = vid[/\/fr\/([0-9]+-[0-9]+)-/,1]
@@ -145,13 +163,13 @@ def dump_video(video_id, title, teaser)
 
     pp vid_id
 	log("Getting video description JSON")
-    videoconf = "/api/player/v1/config/fr/#{vid_id}-A?vector=ARTETV"
-	log("https://api.arte.tv/"+videoconf, LOG_DEBUG) 
+    videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vid_id}-A?vector=ARTETV"
+	log(videoconf, LOG_DEBUG)
 
-	videoconf_content = $hc.get(videoconf).content
+	videoconf_content = fetch(videoconf)
     if videoconf_content =~ /plus disponible/ then
-        videoconf = "/api/player/v1/config/fr/#{vid_id}-F?vector=ARTETV"
-        videoconf_content = $hc.get(videoconf).content
+        videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vid_id}-F?vector=ARTETV"
+        videoconf_content = fetch(videoconf)
     end
 	log(videoconf_content, LOG_DEBUG)
 	vid_json = JSON.parse(videoconf_content)
@@ -165,7 +183,7 @@ def dump_video(video_id, title, teaser)
 
     ###
     # Some information :
-    #   - mediaType can be "mp4" or "hls" 
+    #   - mediaType can be "mp4" or "hls"
     #   - versionProg can be '1' for native, '2' for the other langage and '8' for subbed
     ###
     good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
@@ -176,7 +194,7 @@ def dump_video(video_id, title, teaser)
     end
 
     # If we failed to find a subbed version, try normal
-    if not good or good.length == 0 and $options[:subs] then 
+    if not good or good.length == 0 and $options[:subs] then
         log("No subbed version ? Trying normal")
         good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
             v['quality'] =~ /^#{$options[:qual]}/i and
@@ -188,7 +206,7 @@ def dump_video(video_id, title, teaser)
         log("Several version matching, downloading the first one")
     end
     good = good.first
-    
+
     wget_url = good['url']
 	if not wget_url then
 		return error("No such quality")
@@ -213,7 +231,7 @@ def dump_video(video_id, title, teaser)
 
 	log("Dumping video : "+filename)
 	log("wget -O #{filename} \"#{wget_url}\"", LOG_DEBUG)
-	fork do 
+	fork do
 		exec("wget", "-O", filename, wget_url)
 	end
 
@@ -236,7 +254,7 @@ def get_progs_json()
 
     log("/guide/#{$options[:lang]}/plus7/", LOG_DEBUG)
 
-	plus7 = $hc.get("/guide/#{$options[:lang]}/plus7/").content
+	plus7 = Net::HTTP.get("www.arte.tv","/guide/#{$options[:lang]}/plus7/")
     progs = plus7.lines.find {|a| a=~/clusters:/}.gsub('clusters:','')
     progs = progs[/(\[.*\])/,1]
     log(progs, LOG_DEBUG)
@@ -255,7 +273,7 @@ def list_progs()
     puts progs.join("\n")
 end
 
-begin 
+begin
 	OptionParser.new do |opts|
 		opts.on("--quiet") { |v| $options[:log] = LOG_QUIET }
 		opts.on("--subs") {$options[:subs] = true }
@@ -275,7 +293,7 @@ begin
             $options[:dest] = d
         end
 	end.parse!
-rescue OptionParser::InvalidOption	
+rescue OptionParser::InvalidOption
 	puts $!
 	print_usage
 	exit
@@ -293,12 +311,6 @@ if not which("rtmpdump")
     exit 1
 end
 
-$hc = HttpClient.new("www.arte.tv")
-$hc.allowbadget = true
-
-$api = HttpClient.new("https://api.arte.tv/")
-$api.allowbadget = false
-
 case progname
     when /^http:/
         log("Trying with URL")
@@ -308,7 +320,7 @@ case progname
         exit(0)
     else
         progs_data = get_progs_ids(progname)
-    end
+end
 
 puts "Dumping #{progs_data.length} program(s)"
 log(progs_data, LOG_DEBUG)
