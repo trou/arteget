@@ -22,7 +22,7 @@ Protip :
 You can list current program titles by using "list" as a program name.
 
 History :
-v2.5   : 2016/xx/xx
+v2.5   : 2016/05/20
      - now use Net:HTTP
      - more or less compatible with new site
 v2.4   : 2015/11/08
