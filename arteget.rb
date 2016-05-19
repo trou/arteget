@@ -167,12 +167,17 @@ def dump_video(video_id, title, teaser)
 	log(videoconf, LOG_DEBUG)
 
 	videoconf_content = fetch(videoconf)
-    if videoconf_content =~ /plus disponible/ then
+    if videoconf_content =~ /(plus|pas) disponible/ then
         videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vid_id}-F?vector=ARTETV"
         videoconf_content = fetch(videoconf)
     end
 	log(videoconf_content, LOG_DEBUG)
 	vid_json = JSON.parse(videoconf_content)
+
+    if videoconf_content =~ /type": "error"/
+        puts "An error happenned : "+vid_json["videoJsonPlayer"]["custom_msg"]["msg"]
+        Kernel.exit(1)
+    end
 
     # Fill metadata if needed
     if title == "" or teaser == "" or not teaser or not title then
