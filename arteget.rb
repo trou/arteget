@@ -100,6 +100,7 @@ def get_progs_ids(progname)
         progs = progs.find_all {|p| p["title"].casecmp(progname) == 0 }
         if progs != nil and progs.length > 0 then
 		    p = progs.first['permalink']
+            log(p, LOG_DEBUG)
             if not p =~ /www.arte.tv/ then
                 fatal("Not on main arte site, won't work :(")
             end
@@ -237,6 +238,8 @@ def get_progs_json()
 
 	plus7 = $hc.get("/guide/#{$options[:lang]}/plus7/").content
     progs = plus7.lines.find {|a| a=~/clusters:/}.gsub('clusters:','')
+    progs = progs[/(\[.*\])/,1]
+    log(progs, LOG_DEBUG)
 
 	fatal("Cannot get program list JSON") if not progs
 
