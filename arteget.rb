@@ -235,9 +235,9 @@ def dump_video(video_id, title, teaser)
     end
 
 	log("Dumping video : "+filename)
-	log("wget -O #{filename} \"#{wget_url}\"", LOG_DEBUG)
+	log("wget -nv -O #{filename} \"#{wget_url}\"", LOG_DEBUG)
 	fork do
-		exec("wget", "-O", filename, wget_url)
+		exec("wget", "-nv", "-O", filename, wget_url)
 	end
 
 	Process.wait
