@@ -148,7 +148,6 @@ def dump_video(video_id, title, teaser)
     end
     if video_id =~ /:\/\// then
         # ugly but the only way (?)
-        pp video_id
         vid_id = video_id[/([0-9]{6}-[0-9]{3})/,1]
         if not vid_id then
             page = fetch(video_id)
@@ -161,14 +160,13 @@ def dump_video(video_id, title, teaser)
         vid_id = video_id
     end
 
-    pp vid_id
 	log("Getting video description JSON")
-    videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vid_id}-A?vector=ARTETV"
+    videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vid_id}-A"
 	log(videoconf, LOG_DEBUG)
 
 	videoconf_content = fetch(videoconf)
     if videoconf_content =~ /(plus|pas) disponible/ then
-        videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vid_id}-F?vector=ARTETV"
+        videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vid_id}-F"
         videoconf_content = fetch(videoconf)
     end
 	log(videoconf_content, LOG_DEBUG)
