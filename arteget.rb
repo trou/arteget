@@ -30,6 +30,9 @@ LOG_DEBUG = 2
 $options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :subs => false, :desc => false}
 
 
+
+HANDLERS = { }
+
 def fetch(uri_str, limit = 10)
   # You should choose a better exception.
   raise ArgumentError, 'too many HTTP redirects' if limit == 0
@@ -89,6 +92,7 @@ def print_usage
 	puts "\tprogram\t\t\t\tdownload the latest available broadcasts of \"program\", use \"list\" to list available program names."
 end
 
+
 # Find videos in the given JSON array
 def parse_json(progs)
 	result = progs.map { |p| [p['url'], p['title'], p['desc']] }
@@ -120,7 +124,12 @@ def get_progs_ids(progname)
 		    p = progs.first['permalink']
             log(p, LOG_DEBUG)
             if not p =~ /www.arte.tv/ then
-                fatal("Not on main arte site, won't work :(")
+                log("Not on main arte site, looking for handler", LOG_DEBUG)
+                if ddc then
+                    ddc
+                else
+                    fatal("No handler for external site, exiting")
+                end
             end
             prog_content = fetch(p)
             #log(prog_content, LOG_DEBUG)
@@ -252,6 +261,60 @@ def dump_video(video_id, title, teaser)
 	end
 end
 
+def dump_oldstyle_vid(vid_json_url)
+    vid_json = JSON.parse(fetch(vid_json_url))
+    good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
+        v['quality'] =~ /HD - 720p/i and
+        v['mediaType'] == 'mp4' and
+        (v['versionProg'].to_i == ($options[:subs] ? 8 : 1) or
+         v['versionProg'].to_i == ($options[:subs] ? 3 : 1))
+    end
+
+    # If we failed to find a subbed version, try normal
+    if not good or good.length == 0 and $options[:subs] then
+        log("No subbed version ? Trying normal")
+        good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
+            v['quality'] =~ /^#{$options[:qual]}/i and
+            v['mediaType'] == 'mp4' and
+            v['versionProg'].to_i == 1
+        end
+    end
+    good = good.first 
+    pp good
+    wget_url = good['url']
+	if not wget_url then
+		return error("No such quality")
+	end
+	log(wget_url, LOG_DEBUG)
+
+    if $options[:dest] then
+        filename = $options[:dest]+File::SEPARATOR
+    else
+        filename = ""
+    end
+	filename = "fu.mp4"
+	return log("Already downloaded") if File.exists?(filename) and not $options[:force]
+
+	log("Dumping video : "+filename)
+	log("wget -nv -O #{filename} \"#{wget_url}\"", LOG_DEBUG)
+	fork do
+		exec("wget", "-nv", "-O", filename, wget_url)
+	end
+
+	Process.wait
+	if $?.exited?
+		case $?.exitstatus
+			when 0 then
+				log("Video successfully dumped")
+			when 1 then
+				return error("wget failed")
+			when 2 then
+				log("wget exited, trying to resume")
+                exec("wget", "-c", "-O", filename, wget_url)
+		end
+	end
+end
+
 def get_progs_json()
 	log("Getting index")
 
@@ -275,6 +338,16 @@ def list_progs()
     puts "Available program titles : "
     puts progs.join("\n")
 end
+
+def ddc()
+    ddc_p = fetch("http://ddc.arte.tv/")
+    json = ddc_p[/json_url=(.*?)&/,1]
+    dump_oldstyle_vid(json)
+    Kernel.exit(0)
+end
+
+
+HANDLERS["http://ddc.arte.tv/"] = method(:ddc)
 
 begin
 	OptionParser.new do |opts|
