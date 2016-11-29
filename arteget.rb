@@ -281,7 +281,6 @@ def dump_oldstyle_vid(vid_json_url)
         end
     end
     good = good.first 
-    pp good
     wget_url = good['url']
 	if not wget_url then
 		return error("No such quality")
@@ -291,9 +290,8 @@ def dump_oldstyle_vid(vid_json_url)
     if $options[:dest] then
         filename = $options[:dest]+File::SEPARATOR
     else
-        filename = ""
+        filename = URI(wget_url).path.split('/')[-1]
     end
-	filename = "fu.mp4"
 	return log("Already downloaded") if File.exists?(filename) and not $options[:force]
 
 	log("Dumping video : "+filename)
