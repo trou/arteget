@@ -17,6 +17,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 require 'pp'
+require 'cgi'
 require 'optparse'
 require 'uri'
 require 'json'
@@ -258,7 +259,9 @@ def get_progs_json()
     log("/guide/#{$options[:lang]}/plus7/", LOG_DEBUG)
 
 	plus7 = Net::HTTP.get("www.arte.tv","/guide/#{$options[:lang]}/plus7/")
-    progs = plus7.lines.find {|a| a=~/clusters:/}.gsub('clusters:','')
+    progs = plus7.lines.find {|a| a=~/data-clusters=/}.gsub('data-clusters=','')
+    progs = CGI.unescapeHTML(progs)
+
     progs = progs[/(\[.*\])/,1]
     log(progs, LOG_DEBUG)
 
