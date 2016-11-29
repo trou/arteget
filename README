@@ -22,6 +22,9 @@ Protip :
 You can list current program titles by using "list" as a program name.
 
 History :
+v2.6   : 2016/11/29
+     - fix for latest site
+     - add handler for "Dessous des cartes"
 v2.5   : 2016/05/20
      - now use Net:HTTP
      - more or less compatible with new site
