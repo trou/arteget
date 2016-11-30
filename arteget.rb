@@ -162,6 +162,10 @@ def dump_video(video_id, title, teaser)
         if not vid_id then
             page = fetch(video_id)
             vid = page.lines.find {|l| l =~ /arte_vp_url/}
+            if not vid then
+                log("Can't find video :(")
+                return
+            end
             log(vid, LOG_DEBUG)
             vid_id = vid[/\/fr\/([0-9]+-[0-9]+)-/,1]
         end
