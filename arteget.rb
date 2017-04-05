@@ -138,12 +138,12 @@ def get_progs_ids(progname)
 	        log(article, LOG_DEBUG)
             url = article[/about="\/.*?-([0-9]+-[0-9]+)"/,1]
             if not url then
-                vid = prog_content.lines.find {|l| l =~ /arte_vp_url/}
-	            log(vid, LOG_DEBUG)
-                url = vid[/\/fr\/([0-9]+-[0-9]+)-/,1]
+                vids = prog_content.lines.find_all {|l| l =~ /arte_vp_url/}
+	            log(vids, LOG_DEBUG)
+                urls = vids.map {|v| v[/\/fr\/([0-9]+-[0-9]+)-/,1] }
             end
-            log("Vid ID : "+url, LOG_DEBUG)
-            result = [[url, progname]]
+            log("Vids ID(s) : "+urls.join(','), LOG_DEBUG)
+            result = [[urls, progname]]
         end
 	end
 	fatal("Cannot find requested program(s)") if result == nil or result.length == 0
@@ -395,7 +395,7 @@ end
 case progname
     when /^http:/
         log("Trying with URL")
-        progs_data = [[progname, "", ""]]
+        progs_data = [[[progname], "", ""]]
     when "list"
         list_progs
         exit(0)
@@ -403,6 +403,10 @@ case progname
         progs_data = get_progs_ids(progname)
 end
 
-puts "Dumping #{progs_data.length} program(s)"
+puts "Dumping #{progs_data[0].length} videos for #{progs_data.length} program(s)"
 log(progs_data, LOG_DEBUG)
-progs_data.each {|p| dump_video(p[0], p[1], p[2]) }
+progs_data.each do |p| 
+    p[0].each do |v|
+        dump_video(v, p[1], p[2])
+    end
+end
