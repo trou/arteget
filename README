@@ -11,17 +11,16 @@ Basic usage :
 	$ ./arteget.rb karambolage
 2) downloading a single video :
 	$ ./arteget.rb http://www.arte.tv/guide/fr/040347-001/le-cerveau-et-ses-automatismes-1-2
-3) downloading the 10 most viewed videos :
-	$ ./arteget.rb --top=10
-4) downloading the 10 best rated videos :
-	$ ./arteget.rb -b
-5) downloading in german, standard quality :
-	$ ./artget.rb --qual=sd --lang=de karambolage
+3) downloading in german, standard quality :
+	$ ./arteget.rb --qual=HQ --lang=de karambolage
 
 Protip :
 You can list current program titles by using "list" as a program name.
 
 History :
+v3.0   : 2017/04/27
+     - change for new site
+     - remove old broken features
 v2.6   : 2016/11/29
      - fix for latest site
      - add handler for "Dessous des cartes"
