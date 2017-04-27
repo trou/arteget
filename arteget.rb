@@ -82,15 +82,12 @@ def print_usage
 	puts "\t-v\t--verbose\t\tdebug output"
 	puts "\t-f\t--force\t\t\toverwrite destination file"
 	puts "\t-o\t--output=filename\t\t\tfilename if downloading only one program"
-	puts "\t-d\t--dest=directory\t\t\tdestination directory"
 	puts "\t-D\t--description\t\t\tsave description along with the file"
 	puts "\t\t--subs\t\t\ttry do download subtitled version"
 	puts "\t-q\t--qual=sq|eq|mq\tchoose quality, sq is default"
 	puts "\t-l\t--lang=fr|de\t\tchoose language, german or french (default)"
-	puts "\t-b\t--best [NUM]\t\tdownload the NUM (10 default) best rated programs"
-	puts "\t-t\t--top [NUM]\t\tdownload the NUM (10 default) most viewed programs"
 	puts "\tURL\t\t\t\tdownload the video on this page"
-	puts "\tprogram\t\t\t\tdownload the latest available broadcasts of \"program\", use \"list\" to list available program names."
+	puts "\tprogram\t\t\t\tdownload the latest available broadcasts of \"program\"."
 end
 
 
@@ -102,85 +99,33 @@ end
 
 # Basically gets the lists of programs in JSON format
 # returns an array of arrays, containing 2 strings : [video_id, title]
-def get_progs_ids(progname)
-    progs = get_progs_json()
+def get_video(lang, progname)
+    progs = find_prog(progname)
 
-    #TODO : fix
-	if $options[:best] then
-		bestnum = $options[:best]
-		log("Computing best #{bestnum}")
-        ranked = vids.find_all { |v| v["video_rank"] != nil and v["video_rank"]  > 0 }
-        ranked.sort! { |a, b| a["video_rank"] <=> b["video_rank"] }.reverse!
-        pp ranked
-        result = parse_json(ranked[0,bestnum])
-	elsif $options[:top] then
-		topnum = $options[:top]
-		log("Computing top #{topnum}")
-        vids.sort! { |a, b| a["video_views"][/^[0-9 ]+/].gsub(' ','').to_i <=> b["video_views"][/^[0-9 ]+/].gsub(' ', '').to_i }.reverse!
-        result = parse_json(vids[0,topnum])
-	else
-        # We have a program name
-        progs = progs.find_all {|p| p["title"].casecmp(progname) == 0 }
-        if progs != nil and progs.length > 0 then
-		    p = progs.first['permalink']
-            log(p, LOG_DEBUG)
-            if not p =~ /www.arte.tv/ then
-                log("Not on main arte site, looking for handler", LOG_DEBUG)
-                if ddc then
-                    ddc
-                else
-                    fatal("No handler for external site, exiting")
-                end
-            end
-            prog_content = fetch(p)
-            #log(prog_content, LOG_DEBUG)
-            article = prog_content.lines.find {|l| l =~ /article.*about=.*has-video/}
-	        log(article, LOG_DEBUG)
-            url = article[/about="\/.*?-([0-9]+-[0-9]+)"/,1]
-            if not url then
-                vids = prog_content.lines.find_all {|l| l =~ /arte_vp_url/}
-	            log(vids, LOG_DEBUG)
-                urls = vids.map {|v| v[/\/fr\/([0-9]+-[0-9]+)-/,1] }
-            end
-            log("Vids ID(s) : "+urls.join(','), LOG_DEBUG)
-            result = [[urls, progname]]
-        end
-	end
-	fatal("Cannot find requested program(s)") if result == nil or result.length == 0
-	return result
+    if progs.has_key?('programs') then
+        prog = progs['programs'][0]
+    else
+        fatal("Cannot find requested program(s)") 
+    end
+    id = prog['id']
+
+    # Get json for program
+     
+	prog_json = Net::HTTP.get("www.arte.tv","/guide/api/api/collection/#{id}/#{lang}")
+    prog_res = JSON.parse(prog_json)['videos'][0]
+    return {:title => prog_res['title'], :id => prog_res['programId']}
 end
 
-def dump_video(video_id, title, teaser)
-    if title == "" and teaser == "" then
-        log("Trying to get #{video_id}")
-    else
-        log("Trying to get #{title}")
-    end
-    if video_id =~ /:\/\// then
-        # ugly but the only way (?)
-        vid_id = video_id[/([0-9]{6}-[0-9]{3})/,1]
-        if not vid_id then
-            page = fetch(video_id)
-            vid = page.lines.find {|l| l =~ /arte_vp_url/}
-            if not vid then
-                log("Can't find video :(")
-                return
-            end
-            log(vid, LOG_DEBUG)
-            vid_id = vid[/\/fr\/([0-9]+-[0-9]+)-/,1]
-        end
-        return error("No video id in URL") if not vid_id
-    else
-        vid_id = video_id
-    end
+def dump_video(vidinfo)
+    log("Trying to get #{vidinfo[:title] || vidinfo[:id]}")
 
 	log("Getting video description JSON")
-    videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vid_id}-A"
+    videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vidinfo[:id]}"
 	log(videoconf, LOG_DEBUG)
 
 	videoconf_content = fetch(videoconf)
     if videoconf_content =~ /(plus|pas) disponible/ then
-        videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vid_id}-F"
+        videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vidinfo[:id].gsub(/-A$/,"-F")}"
         videoconf_content = fetch(videoconf)
     end
 	log(videoconf_content, LOG_DEBUG)
@@ -192,11 +137,9 @@ def dump_video(video_id, title, teaser)
     end
 
     # Fill metadata if needed
-    if title == "" or teaser == "" or not teaser or not title then
-        title = title || vid_json['videoJsonPlayer']['VTI'] || ""
-        teaser = vid_json['videoJsonPlayer']['V7T'] || vid_json['videoJsonPlayer']['VDE'] || ""
-        log(title+" : "+teaser)
-    end
+    title = vidinfo[:title] || vid_json['videoJsonPlayer']['VTI'] || ""
+    teaser = vid_json['videoJsonPlayer']['V7T'] || vid_json['videoJsonPlayer']['VDE'] || ""
+    log(title+" : "+teaser)
 
     ###
     # Some information :
@@ -235,7 +178,7 @@ def dump_video(video_id, title, teaser)
     else
         filename = ""
     end
-	filename = filename + ($options[:filename] || vid_id+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".mp4")
+	filename = filename + ($options[:filename] || vidinfo[:id]+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".mp4")
 	return log("Already downloaded") if File.exists?(filename) and not $options[:force]
 
     if $options[:desc] then
@@ -266,93 +209,19 @@ def dump_video(video_id, title, teaser)
 	end
 end
 
-def dump_oldstyle_vid(vid_json_url)
-    vid_json = JSON.parse(fetch(vid_json_url))
-    good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
-        v['quality'] =~ /HD - 720p/i and
-        v['mediaType'] == 'mp4' and
-        (v['versionProg'].to_i == ($options[:subs] ? 8 : 1) or
-         v['versionProg'].to_i == ($options[:subs] ? 3 : 1))
-    end
+def find_prog(prog)
+	log("Searching for #{prog}")
 
-    # If we failed to find a subbed version, try normal
-    if not good or good.length == 0 and $options[:subs] then
-        log("No subbed version ? Trying normal")
-        good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
-            v['quality'] =~ /^#{$options[:qual]}/i and
-            v['mediaType'] == 'mp4' and
-            v['versionProg'].to_i == 1
-        end
-    end
-    good = good.first 
-    wget_url = good['url']
-	if not wget_url then
-		return error("No such quality")
-	end
-	log(wget_url, LOG_DEBUG)
+	plus7 = Net::HTTP.get("www.arte.tv","/#{$options[:lang]}/search/?q=#{prog}")
+    results = plus7.lines.find {|a| a=~/data-results=/}.gsub('data-results=','')
+    results = CGI.unescapeHTML(results)
 
-    if $options[:dest] then
-        filename = $options[:dest]+File::SEPARATOR
-    else
-        filename = URI(wget_url).path.split('/')[-1]
-    end
-	return log("Already downloaded") if File.exists?(filename) and not $options[:force]
+    results = results[/(\{.*\})/,1]
+    log(results, LOG_DEBUG)
 
-	log("Dumping video : "+filename)
-	log("wget -nv -O #{filename} \"#{wget_url}\"", LOG_DEBUG)
-	fork do
-		exec("wget", "-nv", "-O", filename, wget_url)
-	end
-
-	Process.wait
-	if $?.exited?
-		case $?.exitstatus
-			when 0 then
-				log("Video successfully dumped")
-			when 1 then
-				return error("wget failed")
-			when 2 then
-				log("wget exited, trying to resume")
-                exec("wget", "-c", "-O", filename, wget_url)
-		end
-	end
+    results = JSON.parse(results)
+    return results
 end
-
-def get_progs_json()
-	log("Getting index")
-
-    log("/guide/#{$options[:lang]}/plus7/", LOG_DEBUG)
-
-	plus7 = Net::HTTP.get("www.arte.tv","/guide/#{$options[:lang]}/plus7/")
-    progs = plus7.lines.find {|a| a=~/data-clusters=/}.gsub('data-clusters=','')
-    progs = CGI.unescapeHTML(progs)
-
-    progs = progs[/(\[.*\])/,1]
-    log(progs, LOG_DEBUG)
-
-	fatal("Cannot get program list JSON") if not progs
-
-    progs = JSON.parse(progs)
-    return progs
-end
-
-def list_progs()
-    progs = get_progs_json()
-    progs.map! { |v| v["title"] }
-    progs.sort!.uniq!
-    puts "Available program titles : "
-    puts progs.join("\n")
-end
-
-def ddc()
-    ddc_p = fetch("http://ddc.arte.tv/")
-    json = ddc_p[/json_url=(.*?)&/,1]
-    dump_oldstyle_vid(json)
-    Kernel.exit(0)
-end
-
-
-HANDLERS["http://ddc.arte.tv/"] = method(:ddc)
 
 begin
 	OptionParser.new do |opts|
@@ -361,8 +230,6 @@ begin
 		opts.on('-D', "--description") { |v| $options[:desc] = true }
 		opts.on('-v', "--verbose") { |v| $options[:log] = LOG_DEBUG }
 		opts.on('-f', "--force") { $options[:force] = true }
-		opts.on('-b', "--best [NUM]") { |n| $options[:best] = n ? n.to_i : 10 }
-		opts.on('-t', "--top [NUM]") { |n| $options[:top] = (n ? n.to_i : 10) }
 		opts.on("-l", "--lang=LANG_ID") {|l| $options[:lang] = l }
 		opts.on("-q", "--qual=QUAL") {|q| $options[:qual] = q }
 		opts.on("-o", "--output=filename") {|f| $options[:filename] = f }
@@ -380,7 +247,7 @@ rescue OptionParser::InvalidOption
 	exit
 end
 
-if ARGV.length == 0 && !$options[:best] && !$options[:top]
+if ARGV.length == 0 
 	print_usage
 	exit
 elsif ARGV.length == 1
@@ -395,18 +262,10 @@ end
 case progname
     when /^http:/
         log("Trying with URL")
-        progs_data = [[[progname], "", ""]]
-    when "list"
-        list_progs
-        exit(0)
+        video = {:url => progname[/.*arte\.tv(\/.*)/,1]}
     else
-        progs_data = get_progs_ids(progname)
+        video = get_video($options[:lang],progname)
 end
 
-puts "Dumping #{progs_data[0].length} videos for #{progs_data.length} program(s)"
-log(progs_data, LOG_DEBUG)
-progs_data.each do |p| 
-    p[0].each do |v|
-        dump_video(v, p[1], p[2])
-    end
-end
+log(video, LOG_DEBUG)
+dump_video(video)
