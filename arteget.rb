@@ -120,12 +120,12 @@ def dump_video(vidinfo)
     log("Trying to get #{vidinfo[:title] || vidinfo[:id]}")
 
 	log("Getting video description JSON")
-    videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vidinfo[:id]}"
+    videoconf = "https://api.arte.tv/api/player/v1/config/#{$options[:lang]}/#{vidinfo[:id]}"
 	log(videoconf, LOG_DEBUG)
 
 	videoconf_content = fetch(videoconf)
     if videoconf_content =~ /(plus|pas) disponible/ then
-        videoconf = "https://api.arte.tv/api/player/v1/config/fr/#{vidinfo[:id].gsub(/-A$/,"-F")}"
+        videoconf = "https://api.arte.tv/api/player/v1/config/#{$options[:lang]}/#{vidinfo[:id].gsub(/-A$/,"-F")}"
         videoconf_content = fetch(videoconf)
     end
 	log(videoconf_content, LOG_DEBUG)
