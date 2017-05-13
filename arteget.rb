@@ -28,7 +28,7 @@ LOG_QUIET = 0
 LOG_NORMAL = 1
 LOG_DEBUG = 2
 
-$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :subs => false, :desc => false}
+$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :subs => false, :desc => false, :num => 1}
 
 
 
@@ -77,7 +77,7 @@ def which(cmd)
 end
 
 def print_usage
-	puts "Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] --best[=NUM]|--top[=NUM]|URL|program"
+	puts "Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] [-n=NUM] program|URL"
 	puts "\t\t--quiet\t\t\tonly error output"
 	puts "\t-v\t--verbose\t\tdebug output"
 	puts "\t-f\t--force\t\t\toverwrite destination file"
@@ -86,6 +86,7 @@ def print_usage
 	puts "\t\t--subs\t\t\ttry do download subtitled version"
 	puts "\t-q\t--qual=sq|eq|mq\tchoose quality, sq is default"
 	puts "\t-l\t--lang=fr|de\t\tchoose language, german or french (default)"
+	puts "\t-n\t--num=N\t\tdownload N programs"
 	puts "\tURL\t\t\t\tdownload the video on this page"
 	puts "\tprogram\t\t\t\tdownload the latest available broadcasts of \"program\"."
 end
@@ -99,7 +100,7 @@ end
 
 # Basically gets the lists of programs in JSON format
 # returns an array of arrays, containing 2 strings : [video_id, title]
-def get_video(lang, progname)
+def get_videos(lang, progname, num)
     progs = find_prog(progname)
 
     if progs.has_key?('programs') then
@@ -112,8 +113,9 @@ def get_video(lang, progname)
     # Get json for program
      
 	prog_json = Net::HTTP.get("www.arte.tv","/guide/api/api/collection/#{id}/#{lang}")
-    prog_res = JSON.parse(prog_json)['videos'][0]
-    return {:title => prog_res['title'], :id => prog_res['programId']}
+    prog_res = JSON.parse(prog_json)['videos'][0..num-1]
+    videos = prog_res.map { |cur| {:title => cur['title'], :id => cur['programId']}}
+    return videos 
 end
 
 def dump_video(vidinfo)
@@ -233,6 +235,7 @@ begin
 		opts.on("-l", "--lang=LANG_ID") {|l| $options[:lang] = l }
 		opts.on("-q", "--qual=QUAL") {|q| $options[:qual] = q }
 		opts.on("-o", "--output=filename") {|f| $options[:filename] = f }
+		opts.on("-n", "--num=num") {|n| $options[:num] = n }
 		opts.on("-d", "--dest=directory")  do |d|
             if not File.directory?(d)
                 puts "Destination is not a directory"
@@ -270,10 +273,13 @@ case progname
             vid_id = vid[/\/#{$options[:lang]}\/([0-9]+-[0-9]+)-/,1]
         end
         fatal("No video id in URL") if not vid_id
-        video = {:url => progname[/.*arte\.tv(\/.*)/,1], :id=>vid_id}
+        videos = [{:url => progname[/.*arte\.tv(\/.*)/,1], :id=>vid_id}]
     else
-        video = get_video($options[:lang],progname)
+        videos = get_videos($options[:lang],progname, $options[:num].to_i)
 end
 
-log(video, LOG_DEBUG)
-dump_video(video)
+puts "Found #{videos.length} videos" if videos.length > 1
+videos.each do |video|
+    log(video, LOG_DEBUG)
+    dump_video(video)
+end
