@@ -282,4 +282,5 @@ puts "Found #{videos.length} videos" if videos.length > 1
 videos.each do |video|
     log(video, LOG_DEBUG)
     dump_video(video)
+    puts "\n"
 end
