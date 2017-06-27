@@ -122,7 +122,7 @@ def dump_video(vidinfo)
     log("Trying to get #{vidinfo[:title] || vidinfo[:id]}")
 
 	log("Getting video description JSON")
-    videoconf = "https://api.arte.tv/api/player/v1/config/#{$options[:lang]}/#{vidinfo[:id]}"
+    videoconf = "https://api.arte.tv/api/player/v1/config/#{$options[:lang]}/#{vidinfo[:id]}?lifeCycle=1"
 	log(videoconf, LOG_DEBUG)
 
 	videoconf_content = fetch(videoconf)
