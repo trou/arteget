@@ -138,6 +138,11 @@ def dump_video(vidinfo)
         Kernel.exit(1)
     end
 
+    if vid_json['videoJsonPlayer']['VSR'].empty?
+        log "Video found but metadata are incomplete. lang might be erroneous."
+        exit
+    end
+
     # Fill metadata if needed
     title = vidinfo[:title] || vid_json['videoJsonPlayer']['VTI'] || ""
     teaser = vid_json['videoJsonPlayer']['V7T'] || vid_json['videoJsonPlayer']['VDE'] || ""
