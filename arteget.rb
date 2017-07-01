@@ -153,7 +153,7 @@ def dump_video(vidinfo)
 	vid_json = JSON.parse(videoconf_content)
 
     if videoconf_content =~ /type": "error"/
-        puts "An error happenned : "+vid_json["videoJsonPlayer"]["custom_msg"]["msg"]
+        puts "An error happened : "+vid_json["videoJsonPlayer"]["custom_msg"]["msg"]
         Kernel.exit(1)
     end
 
