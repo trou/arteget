@@ -83,7 +83,7 @@ def print_usage
 	puts "\t-f\t--force\t\t\toverwrite destination file"
 	puts "\t-o\t--output=filename\t\t\tfilename if downloading only one program"
 	puts "\t-D\t--description\t\t\tsave description along with the file"
-	puts "\t\t--variant\t\ttry do download specified version ('VF-STF', 'VA-STA', 'VO-STF')"
+	puts "\t\t--variant\t\ttry do download specified version ('VF-STF', 'VA-STA', 'VO-STF'), 'list' display available values and exit."
 	puts "\t-q\t--qual=sq|eq|mq\tchoose quality, sq is default"
 	puts "\t-l\t--lang=fr|de\t\tchoose language, german or french (default)"
 	puts "\t-n\t--num=N\t\tdownload N programs"
@@ -118,6 +118,25 @@ def get_videos(lang, progname, num)
     return videos 
 end
 
+def display_variants(vid_json)
+    variants = vid_json['videoJsonPlayer']['VSR'].values.reduce([]) {
+        |result,h|
+        variant = [h['versionCode'], h['versionLibelle']]
+        result << variant unless result.include?(variant)
+        result
+    }
+
+    format = '%7s | %s'
+    if not variants.empty? then
+        log(sprintf(format % ['Variant', 'Description']))
+        variants.each do |v|
+            log(sprintf format % v)
+        end
+    else
+        log('Unable to find any variant')
+    end
+end
+
 def dump_video(vidinfo)
     log("Trying to get #{vidinfo[:title] || vidinfo[:id]}")
 
@@ -140,6 +159,11 @@ def dump_video(vidinfo)
 
     if vid_json['videoJsonPlayer']['VSR'].empty?
         log "Video found but metadata are incomplete. lang might be erroneous."
+        exit
+    end
+
+    if $options[:variant] == 'list' then
+        display_variants(vid_json)
         exit
     end
 
