@@ -28,7 +28,7 @@ LOG_QUIET = 0
 LOG_NORMAL = 1
 LOG_DEBUG = 2
 
-$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :subs => false, :desc => false, :num => 1}
+$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :variant => nil, :desc => false, :num => 1}
 
 
 
@@ -83,7 +83,7 @@ def print_usage
 	puts "\t-f\t--force\t\t\toverwrite destination file"
 	puts "\t-o\t--output=filename\t\t\tfilename if downloading only one program"
 	puts "\t-D\t--description\t\t\tsave description along with the file"
-	puts "\t\t--subs\t\t\ttry do download subtitled version"
+	puts "\t\t--variant\t\ttry do download specified version ('VF-STF', 'VA-STA', 'VO-STF')"
 	puts "\t-q\t--qual=sq|eq|mq\tchoose quality, sq is default"
 	puts "\t-l\t--lang=fr|de\t\tchoose language, german or french (default)"
 	puts "\t-n\t--num=N\t\tdownload N programs"
@@ -151,18 +151,22 @@ def dump_video(vidinfo)
     ###
     # Some information :
     #   - mediaType can be "mp4" or "hls"
-    #   - versionProg can be '1' for native, '2' for the other langage and '8' for subbed
+    #   - versionCode can be "VF-STF", "VA-STA", "VO-STF"
+    #   - versionProg == 1 is the default variant (depends on lang)
     ###
-    good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
-        v['quality'] =~ /^#{$options[:qual]}/i and
-        v['mediaType'] == 'mp4' and
-        (v['versionProg'].to_i == ($options[:subs] ? 8 : 1) or
-         v['versionProg'].to_i == ($options[:subs] ? 3 : 1))
+    if $options[:variant] then
+        good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
+            v['quality'] =~ /^#{$options[:qual]}/i and
+            v['mediaType'] == 'mp4' and
+            $options[:variant] == v['versionCode']
+        end
     end
 
-    # If we failed to find a subbed version, try normal
-    if not good or good.length == 0 and $options[:subs] then
-        log("No subbed version ? Trying normal")
+    # If we failed to find specified variant, try normal
+    if not good or good.length == 0 then
+        if $options[:variant] then
+            log("Variant not found ? Trying default")
+        end
         good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
             v['quality'] =~ /^#{$options[:qual]}/i and
             v['mediaType'] == 'mp4' and
@@ -233,7 +237,7 @@ end
 begin
 	OptionParser.new do |opts|
 		opts.on("--quiet") { |v| $options[:log] = LOG_QUIET }
-		opts.on("--subs") {$options[:subs] = true }
+		opts.on("--variant=VARIANT") { |v| $options[:variant] = v }
 		opts.on('-D', "--description") { |v| $options[:desc] = true }
 		opts.on('-v', "--verbose") { |v| $options[:log] = LOG_DEBUG }
 		opts.on('-f', "--force") { $options[:force] = true }
