@@ -76,22 +76,6 @@ def which(cmd)
   return nil
 end
 
-def print_usage
-	puts "Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] [-n=NUM] program|URL"
-	puts "\t\t--quiet\t\t\tonly error output"
-	puts "\t-v\t--verbose\t\tdebug output"
-	puts "\t-f\t--force\t\t\toverwrite destination file"
-	puts "\t-o\t--output=filename\t\t\tfilename if downloading only one program"
-	puts "\t-D\t--description\t\t\tsave description along with the file"
-	puts "\t\t--variant\t\ttry do download specified version ('VF-STF', 'VA-STA', 'VO-STF'), 'list' display available values and exit."
-	puts "\t-q\t--qual=sq|eq|mq\tchoose quality, sq is default"
-	puts "\t-l\t--lang=fr|de\t\tchoose language, german or french (default)"
-	puts "\t-n\t--num=N\t\tdownload N programs"
-	puts "\tURL\t\t\t\tdownload the video on this page"
-	puts "\tprogram\t\t\t\tdownload the latest available broadcasts of \"program\"."
-end
-
-
 # Find videos in the given JSON array
 def parse_json(progs)
 	result = progs.map { |p| [p['url'], p['title'], p['desc']] }
@@ -258,33 +242,46 @@ def find_prog(prog)
     return results
 end
 
-begin
-	OptionParser.new do |opts|
-		opts.on("--quiet") { |v| $options[:log] = LOG_QUIET }
-		opts.on("--variant=VARIANT") { |v| $options[:variant] = v }
-		opts.on('-D', "--description") { |v| $options[:desc] = true }
-		opts.on('-v', "--verbose") { |v| $options[:log] = LOG_DEBUG }
-		opts.on('-f', "--force") { $options[:force] = true }
-		opts.on("-l", "--lang=LANG_ID") {|l| $options[:lang] = l }
-		opts.on("-q", "--qual=QUAL") {|q| $options[:qual] = q }
-		opts.on("-o", "--output=filename") {|f| $options[:filename] = f }
-		opts.on("-n", "--num=num") {|n| $options[:num] = n }
-		opts.on("-d", "--dest=directory")  do |d|
-            if not File.directory?(d)
-                puts "Destination is not a directory"
-                exit 1
-            end
-            $options[:dest] = d
+QUALITY = ['sq', 'eq', 'mq']
+
+parser = OptionParser.new do |opts|
+    opts.banner = 'Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] [-n=NUM] program|URL'
+    opts.separator ''
+    opts.separator '    URL: download the video on this page'
+    opts.separator '    program: download the latest available broadcasts of "program"'
+    opts.separator ''
+
+    opts.on("--quiet", 'only error output') { |v| $options[:log] = LOG_QUIET }
+    opts.on("--variant=VARIANT",
+            "try do download specified version (e.g. 'VF-STF', 'VA-STA', 'VO-STF'), " \
+            "'list' display available values and exit.") {
+        |v| $options[:variant] = v
+    }
+    opts.on('-D', "--description", 'save description along with the file') { |v| $options[:desc] = true }
+    opts.on('-v', "--verbose", 'debug output') { |v| $options[:log] = LOG_DEBUG }
+    opts.on('-f', "--force", 'overwrite destination file') { $options[:force] = true }
+    opts.on("-l", "--lang=LANG", 'choose language, german (de) or french (fr) (default is "fr")') { |l| $options[:lang] = l }
+    opts.on("-q", "--qual=QUAL", QUALITY, 'choose quality, sq is default', '(%s)' % QUALITY.join(', ')) { |q| $options[:qual] = q }
+    opts.on("-o", "--output=filename", 'filename if downloading only one program') { |f| $options[:filename] = f }
+    opts.on("-n", "--num=N", "download N programs") { |n| $options[:num] = n }
+    opts.on("-d", "--dest=directory") do |d|
+        if not File.directory?(d)
+            puts "Destination is not a directory"
+            exit 1
         end
-	end.parse!
-rescue OptionParser::InvalidOption
+        $options[:dest] = d
+    end
+end
+
+begin parser.parse!
+rescue OptionParser::ParseError
 	puts $!
-	print_usage
+	puts parser
 	exit
 end
 
 if ARGV.length == 0 
-	print_usage
+	puts parser
 	exit
 elsif ARGV.length == 1
 	progname=ARGV.shift
