@@ -2,71 +2,71 @@ arteget is a simple ruby script that dumps television programs from the "+7" sit
 
 It uses wget to dump streams to the disk. Be sure to have it in your PATH.
 
-Known issues :
+Known issues:
 Note that if the program name contains accents, such as "Téléchat", your shell
 should be configured in UTF-8, otherwise it won't work.
 
-Basic usage :
-1) downloading the latest broadcasts of a given program :
+Basic usage:
+1) downloading the latest broadcasts of a given program:
 	$ ./arteget.rb karambolage
-2) downloading a single video :
+2) downloading a single video:
 	$ ./arteget.rb http://www.arte.tv/guide/fr/040347-001/le-cerveau-et-ses-automatismes-1-2
-3) downloading in german, standard quality :
+3) downloading in german, standard quality:
 	$ ./arteget.rb --qual=HQ --lang=de karambolage
 
-Protip :
+Protip:
 You can list current program titles by using "list" as a program name.
 
-History :
-v3.1   : 2017/XX/XX
+History:
+v3.1: 2017/XX/XX
      - -n option
      - JSON download fix
-     - Use OptionParser (thanks Pierre-Louis Bonicoli !)
-     - New 'variant' option to select subtitles (thanks Pierre-Louis Bonicoli !)
-v3.0   : 2017/04/27
+     - Use OptionParser (thanks Pierre-Louis Bonicoli!)
+     - New 'variant' option to select subtitles (thanks Pierre-Louis Bonicoli!)
+v3.0: 2017/04/27
      - change for new site
      - remove old broken features
-v2.6   : 2016/11/29
+v2.6: 2016/11/29
      - fix for latest site
      - add handler for "Dessous des cartes"
-v2.5   : 2016/05/20
+v2.5: 2016/05/20
      - now use Net:HTTP
      - more or less compatible with new site
-v2.4   : 2015/11/08
+v2.4: 2015/11/08
      - fix basic functionnalities with new site, still buggy
      - now uses wget instead of rtmpdump
-v2.3   : 2014/09/20
+v2.3: 2014/09/20
      - fix page parsing
      - fix rtmpdump invocation
-v2.2   : 2014/01/12
+v2.2: 2014/01/12
      - description file dumping
      - program listing
-v2.1   :
+v2.1:
      - check for rtmpdump at startup
      - option to specify destination directory
-v2.0   : 2013/08/25
+v2.0: 2013/08/25
      - rewritten for the new site, not compatible with
        the old one.
      - allow download of subtitled version
-v1.11  : 2011/04/30
+v1.11: 2011/04/30
 	 - fix URL downloading bug
-v1.1   : 2011/03/06
+v1.1: 2011/03/06
 	 - options on the command line
 	 - reworked to use XML descriptions
 	 - top videos (views/ratings) support
 	 - quiet mode
-v1.01  : 2011/02/20
+v1.01: 2011/02/20
 	 - URL arg support
 	 - new site URL
 	 - libhttp update
-v1.0  : 2010/06/13
+v1.0: 2010/06/13
 	 - new libhttp release
 	 - handles new site
 	 - way cleaner code
 
-v0.1  :  2008/XX/XX 
+v0.1:  2008/XX/XX 
 	 - First "release"
 
-Contact me by mail :
-mailbox : devel-arteget
-domain : syscall.eu
+Contact me by mail:
+mailbox: devel-arteget
+domain: syscall.eu
