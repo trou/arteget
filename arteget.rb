@@ -87,8 +87,8 @@ end
 def get_videos(lang, progname, num)
     progs = find_prog(progname)
 
-    if progs.has_key?('programs') then
-        prog = progs['programs'][0]
+    if progs.has_key?('teasers') then
+        prog = progs['teasers'][0]
     else
         fatal("Cannot find requested program(s)") 
     end
@@ -231,14 +231,11 @@ end
 def find_prog(prog)
 	log("Searching for #{prog}")
 
-	plus7 = Net::HTTP.get("www.arte.tv","/#{$options[:lang]}/search/?q=#{prog}")
-    results = plus7.lines.find {|a| a=~/data-results=/}.gsub('data-results=','')
-    results = CGI.unescapeHTML(results)
+	plus7 = Net::HTTP.get("www.arte.tv","/guide/api/api/search/#{$options[:lang]}/#{prog}/1")
+    results = JSON.parse(plus7)
 
-    results = results[/(\{.*\})/,1]
     log(results, LOG_DEBUG)
 
-    results = JSON.parse(results)
     return results
 end
 
