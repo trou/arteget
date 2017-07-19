@@ -22,6 +22,7 @@ require 'optparse'
 require 'uri'
 require 'json'
 require 'net/http'
+require 'open-uri'
 
 LOG_ERROR = -1
 LOG_QUIET = 0
@@ -229,9 +230,10 @@ def dump_video(vidinfo)
 end
 
 def find_prog(prog)
-	log("Searching for #{prog}")
+    prog_enc = URI::encode(prog)
+	log("Searching for #{prog} at http://www.arte.tv/guide/api/api/search/#{$options[:lang]}/#{prog_enc}/1")
 
-	plus7 = Net::HTTP.get("www.arte.tv","/guide/api/api/search/#{$options[:lang]}/#{prog}/1")
+	plus7 = Net::HTTP.get("www.arte.tv","/guide/api/api/search/#{$options[:lang]}/#{prog_enc}/1")
     results = JSON.parse(plus7)
 
     log(results, LOG_DEBUG)
