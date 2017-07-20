@@ -18,11 +18,12 @@ Protip:
 You can list current program titles by using "list" as a program name.
 
 History:
-v3.1: 2017/XX/XX
+v3.1: 2017/07/20
      - -n option
      - JSON download fix
      - Use OptionParser (thanks Pierre-Louis Bonicoli!)
      - New 'variant' option to select subtitles (thanks Pierre-Louis Bonicoli!)
+     - Changes for program search
 v3.0: 2017/04/27
      - change for new site
      - remove old broken features
