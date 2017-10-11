@@ -102,10 +102,9 @@ def get_videos(lang, progname, num)
     prog_parsed = JSON.parse(prog_json)
 
     list = prog_parsed["zones"].find {|e| e['type'] == 'listing'}
-    teasers = list['teasers']
-    # Sort by diffusion date
-    prog_res = teasers.sort_by {|e| e['beginsAt']}.reverse[0..num-1]
-    # prog_res = list['teasers'][0..num-1]
+    teasers = list['data'].find_all {|e| e['type'] == 'teaser'}
+    # Sort by ID as date is no more present
+    prog_res = teasers.sort_by {|e| e['programId']}.reverse[0..num-1]
     videos = prog_res.map { |cur| {:title => cur['title'], :id => cur['programId']}}
     return videos 
 end
