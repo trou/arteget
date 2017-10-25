@@ -96,7 +96,7 @@ def get_videos(lang, progname, num)
     id = prog['id']
 
     # Get json for programe
-    url = "https://www.arte.tv/guide/api/api/collection/#{id}/#{lang}"
+    url = "https://www.arte.tv/guide/api/api/collection/#{id}/#{lang}/"
 	log("Getting #{progname} list at #{url}")
 	prog_json = Net::HTTP.get(URI(url))
     prog_parsed = JSON.parse(prog_json)
@@ -237,9 +237,9 @@ end
 
 def find_prog(prog)
     prog_enc = URI::encode(prog)
-	log("Searching for #{prog} at https://www.arte.tv/guide/api/api/search/#{$options[:lang]}/#{prog_enc}/1")
+	log("Searching for #{prog} at https://www.arte.tv/guide/api/api/search/#{$options[:lang]}/#{prog_enc}/1/")
 
-	plus7 = Net::HTTP.get(URI("https://www.arte.tv/guide/api/api/search/#{$options[:lang]}/#{prog_enc}/1"))
+	plus7 = Net::HTTP.get(URI("https://www.arte.tv/guide/api/api/search/#{$options[:lang]}/#{prog_enc}/1/"))
     results = JSON.parse(plus7)
 
     log(results, LOG_DEBUG)
