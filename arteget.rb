@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # arteget
-# Copyright 2008-2017 Raphaël Rigo
+# Copyright 2008-2018 Raphaël Rigo
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
