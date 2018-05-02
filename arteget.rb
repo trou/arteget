@@ -88,12 +88,11 @@ end
 def get_videos(lang, progname, num)
     progs = find_prog(progname)
 
-    if progs.has_key?('teasers') then
-        prog = progs['teasers'][0]
+    if progs.has_key?('id') then
+        id = progs['id']
     else
         fatal("Cannot find requested program(s)") 
     end
-    id = prog['id']
 
     # Get json for programe
     url = "https://www.arte.tv/guide/api/api/collection/#{id}/#{lang}/"
@@ -237,14 +236,15 @@ end
 
 def find_prog(prog)
     prog_enc = URI::encode(prog)
-	log("Searching for #{prog} at https://www.arte.tv/guide/api/api/search/#{$options[:lang]}/#{prog_enc}/1/")
+    search_url = "https://www.arte.tv/guide/api/api/pages/#{$options[:lang]}/web/SEARCH/?query=#{prog_enc}"
+	log("Searching for #{prog} at #{search_url}")
 
-	plus7 = Net::HTTP.get(URI("https://www.arte.tv/guide/api/api/search/#{$options[:lang]}/#{prog_enc}/1/"))
+	plus7 = Net::HTTP.get(URI("#{search_url}"))
     results = JSON.parse(plus7)
 
     log(results, LOG_DEBUG)
 
-    return results
+    return results['zones'][0]['data'][0]
 end
 
 QUALITY = ['sq', 'eq', 'mq']
