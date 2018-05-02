@@ -18,6 +18,9 @@ Protip:
 You can list current program titles by using "list" as a program name.
 
 History:
+v3.2: xx
+     - use https
+     - site updates
 v3.1: 2017/07/20
      - -n option
      - JSON download fix
