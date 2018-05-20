@@ -298,15 +298,9 @@ if not which("rtmpdump")
 end
 
 case progname
-    when /^http:/
+    when /^https:/
         log("Trying with URL")
         vid_id = progname[/([0-9]{6}-[0-9]{3})/,1]
-        if not vid_id then
-            page = fetch(video_id)
-            vid = page.lines.find {|l| l =~ /arte_vp_url/}
-            log(vid, LOG_DEBUG)
-            vid_id = vid[/\/#{$options[:lang]}\/([0-9]+-[0-9]+)-/,1]
-        end
         fatal("No video id in URL") if not vid_id
         videos = [{:url => progname[/.*arte\.tv(\/.*)/,1], :id=>vid_id}]
     else
