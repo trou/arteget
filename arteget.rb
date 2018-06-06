@@ -236,7 +236,7 @@ end
 
 def find_prog(prog)
     prog_enc = URI::encode(prog)
-    search_url = "https://www.arte.tv/guide/api/api/pages/#{$options[:lang]}/web/SEARCH/?query=#{prog_enc}"
+    search_url = "https://www.arte.tv/guide/api/api/pages/#{$options[:lang]}/SEARCH/?query=#{prog_enc}"
 	log("Searching for #{prog} at #{search_url}")
 
 	plus7 = Net::HTTP.get(URI("#{search_url}"))
