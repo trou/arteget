@@ -247,7 +247,7 @@ def find_prog(prog)
     return results['zones'][0]['data'][0]
 end
 
-QUALITY = ['sq', 'eq', 'mq']
+QUALITY = ['sq', 'eq', 'mq', 'xq']
 
 parser = OptionParser.new do |opts|
     opts.banner = 'Usage : arteget [-v] [--qual=QUALITY] [--lang=LANG] [-n=NUM] program|URL'
