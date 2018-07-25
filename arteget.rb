@@ -95,14 +95,14 @@ def get_videos(lang, progname, num)
     end
 
     # Get json for programe
-    url = "https://www.arte.tv/guide/api/api/collection/#{id}/#{lang}/"
+    url = "https://www.arte.tv/guide/api/api/zones/#{lang}/listing_#{id}/"
 	log("Getting #{progname} list at #{url}")
 	prog_json = Net::HTTP.get(URI(url))
     prog_parsed = JSON.parse(prog_json)
 
-    list = prog_parsed["zones"].find {|e| e['type'] == 'listing'}
-    teasers = list['data'].find_all {|e| e['type'] == 'teaser'}
+    teasers = prog_parsed['data'].find_all {|e| e['type'] == 'teaser'}
     # Sort by ID as date is no more present
+    log(teasers.map {|e| e['programId']}.sort.reverse, LOG_DEBUG)
     prog_res = teasers.sort_by {|e| e['programId']}.reverse[0..num-1]
     videos = prog_res.map { |cur| {:title => cur['title'], :id => cur['programId']}}
     return videos 
