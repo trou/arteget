@@ -18,6 +18,8 @@ Protip:
 You can list current program titles by using "list" as a program name.
 
 History:
+v3.3: 
+     - fix download by program name (website update)
 v3.2: 2018/05/03
      - use https
      - site updates
