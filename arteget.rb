@@ -88,19 +88,22 @@ end
 def get_videos(lang, progname, num)
     progs = find_prog(progname)
 
-    if progs.has_key?('id') then
+    if progs.has_key?('url') then
+        url = progs['url']
         id = progs['id']
     else
         fatal("Cannot find requested program(s)") 
     end
 
-    # Get json for programe
-    url = "https://www.arte.tv/guide/api/api/zones/#{lang}/listing_#{id}/"
-	log("Getting #{progname} list at #{url}")
-	prog_json = Net::HTTP.get(URI(url))
-    prog_parsed = JSON.parse(prog_json)
+    # Get JSON for program in the HTML page
+	log("Getting #{progname} page at #{url}")
+	prog_page = Net::HTTP.get(URI(url))
+    prog_json = prog_page[/window.__INITIAL_STATE__ = (.*);/, 1]
+    log(prog_json, LOG_DEBUG)
+    prog_parsed = JSON.parse(prog_json)['pages']['list'][id+'_{}']['zones']
+    list = prog_parsed.find {|p| p['type'] == 'listing'}['data']
 
-    teasers = prog_parsed['data'].find_all {|e| e['type'] == 'teaser'}
+    teasers = list.find_all {|e| e['type'] == 'teaser'}
     # Sort by ID as date is no more present
     log(teasers.map {|e| e['programId']}.sort.reverse, LOG_DEBUG)
     prog_res = teasers.sort_by {|e| e['programId']}.reverse[0..num-1]
