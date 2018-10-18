@@ -10,7 +10,13 @@ Basic usage:
 3) downloading in german, standard quality:
 	$ ./arteget.rb --qual=HQ --lang=de karambolage
 
+Notes:
+Specifying an arbitrary string instead of an URL actualy uses the search
+engine, so you have some freedom here.
+
 History:
+v3.5: 
+     - better handling of single program search results
 v3.4: 2018/10/18
      - fix download by program name (website update)
 v3.3: 2018/09/23
