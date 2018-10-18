@@ -99,9 +99,9 @@ def get_videos(lang, progname, num)
 	log("Getting #{progname} page at #{url}")
 	prog_page = Net::HTTP.get(URI(url))
     prog_json = prog_page[/window.__INITIAL_STATE__ = (.*);/, 1]
-    log(prog_json, LOG_DEBUG)
+    log("Program id: "+id)
     prog_parsed = JSON.parse(prog_json)['pages']['list'][id+'_{}']['zones']
-    list = prog_parsed.find {|p| p['type'] == 'listing'}['data']
+    list = prog_parsed.find {|p| p['code']['name'] == 'collection_videos'}['data']
 
     teasers = list.find_all {|e| e['type'] == 'teaser'}
     # Sort by ID as date is no more present
