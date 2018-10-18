@@ -88,7 +88,7 @@ end
 def get_videos(lang, progname, num)
     progs = find_prog(progname)
 
-    if progs.has_key?('url') then
+    if progs and progs.has_key?('url') then
         url = progs['url']
         id = progs['id']
     else
@@ -101,9 +101,22 @@ def get_videos(lang, progname, num)
     prog_json = prog_page[/window.__INITIAL_STATE__ = (.*);/, 1]
     log("Program id: "+id)
     prog_parsed = JSON.parse(prog_json)['pages']['list'][id+'_{}']['zones']
-    list = prog_parsed.find {|p| p['code']['name'] == 'collection_videos'}['data']
 
-    teasers = list.find_all {|e| e['type'] == 'teaser'}
+    list = prog_parsed.find {|p| p['code']['name'] == 'collection_videos'}
+    # Maybe it's a program, not a collection
+    if not list then
+        log('No collection found, trying program')
+        list = prog_parsed.find {|p| p['code']['name'] == 'program_content'}
+        if not list then
+            fatal("Could not find program")
+        end
+        type = "program"
+    else
+        type = "teaser"
+    end
+
+    teasers = list['data'].find_all {|e| e['type'] == type}
+
     # Sort by ID as date is no more present
     log(teasers.map {|e| e['programId']}.sort.reverse, LOG_DEBUG)
     prog_res = teasers.sort_by {|e| e['programId']}.reverse[0..num-1]
