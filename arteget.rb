@@ -77,12 +77,6 @@ def which(cmd)
   return nil
 end
 
-# Find videos in the given JSON array
-def parse_json(progs)
-	result = progs.map { |p| [p['url'], p['title'], p['desc']] }
-	return result
-end
-
 # Basically gets the lists of programs in JSON format
 # returns an array of arrays, containing 2 strings : [video_id, title]
 def get_videos(lang, progname, num)
