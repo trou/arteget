@@ -17,6 +17,7 @@ engine, so you have some freedom here.
 History:
 v3.5: 
      - better handling of single program search results
+     - Use API url to list videos, allowing more downloads
 v3.4: 2018/10/18
      - fix download by program name (website update)
 v3.3: 2018/09/23
