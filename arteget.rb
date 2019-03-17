@@ -84,38 +84,60 @@ def get_videos(lang, progname, num)
 
     if progs and progs.has_key?('url') then
         url = progs['url']
-        id = progs['id']
+        id = progs['programId']
     else
-        fatal("Cannot find requested program(s)") 
+        fatal("Cannot find requested program(s)")
     end
+    teasers = []
 
-    # Get JSON for program in the HTML page
-	log("Getting #{progname} page at #{url}")
-	prog_page = Net::HTTP.get(URI(url))
-    prog_json = prog_page[/window.__INITIAL_STATE__ = (.*);/, 1]
-    log("Program id: "+id)
-    prog_parsed = JSON.parse(prog_json)['pages']['list'][id+'_{}']['zones']
-
-    list = prog_parsed.find {|p| p['code']['name'] == 'collection_videos'}
-    # Maybe it's a program, not a collection
-    if not list then
-        log('No collection found, trying program')
-        list = prog_parsed.find {|p| p['code']['name'] == 'program_content'}
-        if not list then
-            fatal("Could not find program")
+    # Trying first the collections URL
+    page = 1
+    while teasers.length < num do
+      collec_url = "https://www.arte.tv/guide/api/api/zones/fr/collection_videos/?id=#{id}&page=#{page}"
+      log("Getting #{progname} (page #{page}) JSON collection at #{collec_url}")
+      prog_coll = Net::HTTP.get_response(URI(collec_url))
+      log("JSON collection HTTP code: #{prog_coll.code}", LOG_DEBUG)
+      if prog_coll.code == '200' then
+        log(prog_coll.body, LOG_DEBUG)
+        coll_parsed = JSON.parse(prog_coll.body)
+        if coll_parsed['code']['name'] == 'collection_videos' then
+          teasers += coll_parsed['data'].find_all {|e| e['type'] == "teaser"}
+          # Stop looping if there's no new video
+          num = teasers.length if coll_parsed['data'].length == 0
+          page += 1
         end
-        type = "program"
-    else
-        type = "teaser"
+      end
     end
 
-    teasers = list['data'].find_all {|e| e['type'] == type}
+    if teasers.length == 0 then
+      # Get JSON for program in the HTML page
+      log("Getting #{progname} page at #{url}")
+      prog_page = Net::HTTP.get(URI(url))
+      prog_json = prog_page[/window.__INITIAL_STATE__ = (.*);/, 1]
+      log("Program id: "+id)
+      prog_parsed = JSON.parse(prog_json)['pages']['list'][id+'_{}']['zones']
+
+      list = prog_parsed.find {|p| p['code']['name'] == 'collection_videos'}
+      # Maybe it's a program, not a collection
+      if not list then
+          log('No collection found, trying program')
+          list = prog_parsed.find {|p| p['code']['name'] == 'program_content'}
+          if not list then
+              fatal("Could not find program")
+          end
+          type = "program"
+      else
+          type = "teaser"
+      end
+
+      teasers = list['data'].find_all {|e| e['type'] == type}
+    end
 
     # Sort by ID as date is no more present
     log(teasers.map {|e| e['programId']}.sort.reverse, LOG_DEBUG)
     prog_res = teasers.sort_by {|e| e['programId']}.reverse[0..num-1]
     videos = prog_res.map { |cur| {:title => cur['title'], :id => cur['programId']}}
-    return videos 
+    return videos
 end
 
 def display_variants(vid_json)
@@ -295,7 +317,7 @@ rescue OptionParser::ParseError
 	exit
 end
 
-if ARGV.length == 0 
+if ARGV.length == 0
 	puts parser
 	exit
 elsif ARGV.length == 1
