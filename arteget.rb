@@ -332,7 +332,7 @@ end
 case progname
     when /^https:/
         log("Trying with URL")
-        vid_id = progname[/([0-9]{6}-[0-9]{3})/,1]
+        vid_id = progname[/([0-9]{6}-[0-9]{3}(-[AF])?)/,1]
         fatal("No video id in URL") if not vid_id
         videos = [{:url => progname[/.*arte\.tv(\/.*)/,1], :id=>vid_id}]
     else
