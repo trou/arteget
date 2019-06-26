@@ -100,7 +100,7 @@ def get_videos(lang, progname, num)
       if prog_coll.code == '200' then
         log(prog_coll.body, LOG_DEBUG)
         coll_parsed = JSON.parse(prog_coll.body)
-        if coll_parsed['code']['name'] == 'collection_videos' then
+        if coll_parsed['datakey']['id'] == 'COLLECTION_VIDEOS' then
           teasers += coll_parsed['data'].find_all {|e| e['type'] == "teaser"}
           # Stop looping if there's no new video
           num = teasers.length if coll_parsed['data'].length == 0
