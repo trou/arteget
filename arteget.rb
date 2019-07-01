@@ -134,6 +134,7 @@ def get_videos(lang, progname, num)
     end
 
     # Sort by ID as date is no more present
+    # XXX maybe we should not sort ?
     log(teasers.map {|e| e['programId']}.sort.reverse, LOG_DEBUG)
     prog_res = teasers.sort_by {|e| e['programId']}.reverse[0..num-1]
     videos = prog_res.map { |cur| {:title => cur['title'], :id => cur['programId']}}
