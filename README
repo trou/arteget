@@ -16,6 +16,7 @@ engine, so you have some freedom here.
 
 History:
 v3.5: 
+     - New API URLs
      - better handling of single program search results
      - Use API url to list videos, allowing more downloads
      - Some fixes
