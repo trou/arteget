@@ -93,7 +93,7 @@ def get_videos(lang, progname, num)
     # Trying first the collections URL
     page = 1
     while teasers.length < num do
-      collec_url = "https://www.arte.tv/guide/api/api/zones/fr/collection_videos/?id=#{id}&page=#{page}"
+      collec_url = "https://www.arte.tv/guide/api/emac/v3/#{$options[:lang]}/web/data/COLLECTION_VIDEOS/?collectionId=#{id}&page=#{page}"
       log("Getting #{progname} (page #{page}) JSON collection at #{collec_url}")
       prog_coll = Net::HTTP.get_response(URI(collec_url))
       log("JSON collection HTTP code: #{prog_coll.code}", LOG_DEBUG)
@@ -269,7 +269,7 @@ end
 
 def find_prog(prog)
     prog_enc = URI::encode(prog)
-    search_url = "https://www.arte.tv/guide/api/api/pages/#{$options[:lang]}/SEARCH/?query=#{prog_enc}"
+    search_url = "https://www.arte.tv/guide/api/emac/v3/#{$options[:lang]}/web/search/?query=#{prog_enc}"
 	log("Searching for #{prog} at #{search_url}")
 
 	plus7 = Net::HTTP.get(URI("#{search_url}"))
