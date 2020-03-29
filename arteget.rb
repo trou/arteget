@@ -268,7 +268,7 @@ def dump_video(vidinfo)
 end
 
 def find_prog(prog)
-    prog_enc = URI::encode(prog)
+    prog_enc = CGI::escape(prog)
     search_url = "https://www.arte.tv/guide/api/emac/v3/#{$options[:lang]}/web/search/?query=#{prog_enc}"
 	log("Searching for #{prog} at #{search_url}")
 
