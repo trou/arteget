@@ -30,7 +30,8 @@ LOG_NORMAL = 1
 LOG_DEBUG = 2
 LOG_DEBUG2 = 3
 
-$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :variant => nil, :desc => false, :num => 1}
+$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :variant => nil,
+            :desc => false, :num => 1, :min => 0}
 
 
 
@@ -102,7 +103,7 @@ def get_videos(lang, progname, num)
         log(prog_coll.body, LOG_DEBUG2)
         coll_parsed = JSON.parse(prog_coll.body)
         if coll_parsed['datakey']['id'] == 'COLLECTION_VIDEOS' then
-          teasers += coll_parsed['data'].find_all {|e| e['type'] == "teaser"}
+          teasers += coll_parsed['data'].find_all {|e| e['type'] == "teaser" and e['duration'] > $options[:min]}
           # Stop looping if there's no new video
           num = teasers.length if coll_parsed['data'].length == 0
           page += 1
@@ -299,6 +300,7 @@ parser = OptionParser.new do |opts|
     opts.on('-D', "--description", 'save description along with the file') { |v| $options[:desc] = true }
     opts.on('-v', "--verbose", 'debug output') { |v| $options[:log] = LOG_DEBUG }
     opts.on('-V', "--veryverbose", 'debug2 output') { |v| $options[:log] = LOG_DEBUG2 }
+    opts.on('-m', "--min-dur=m", 'minimum duration (seconds)') { |m| $options[:min] = m.to_i }
     opts.on('-f', "--force", 'overwrite destination file') { $options[:force] = true }
     opts.on("-l", "--lang=LANG", 'choose language, german (de) or french (fr) (default is "fr")') { |l| $options[:lang] = l }
     opts.on("-q", "--qual=QUAL", QUALITY, 'choose quality, sq is default', '(%s)' % QUALITY.join(', ')) { |q| $options[:qual] = q }
