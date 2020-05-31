@@ -3,11 +3,13 @@ arteget is a simple ruby script that dumps television programs from the "+7" sit
 It uses wget to dump streams to the disk. Be sure to have it in your PATH.
 
 Basic usage:
-1) downloading the latest broadcasts of a given program:
+1) downloading the latest broadcast of a given program:
 	$ ./arteget.rb karambolage
-2) downloading a single video:
+2) download the latest one that is at least 5 mn, with the description
+    $ ./arteget.rb -D -m 300 karambolage
+3) downloading a single video:
 	$ ./arteget.rb http://www.arte.tv/guide/fr/040347-001/le-cerveau-et-ses-automatismes-1-2
-3) downloading in german, standard quality:
+4) downloading in german, standard quality:
 	$ ./arteget.rb --qual=HQ --lang=de karambolage
 
 Notes:
@@ -20,6 +22,8 @@ v3.5:
      - better handling of single program search results
      - Use API url to list videos, allowing more downloads
      - Some fixes
+     - new verbosity level
+     - --min-dur option to specify minimum duration
 v3.4: 2018/10/18
      - fix download by program name (website update)
 v3.3: 2018/09/23
