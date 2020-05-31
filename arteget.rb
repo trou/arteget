@@ -28,6 +28,7 @@ LOG_ERROR = -1
 LOG_QUIET = 0
 LOG_NORMAL = 1
 LOG_DEBUG = 2
+LOG_DEBUG2 = 3
 
 $options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :variant => nil, :desc => false, :num => 1}
 
@@ -98,7 +99,7 @@ def get_videos(lang, progname, num)
       prog_coll = Net::HTTP.get_response(URI(collec_url))
       log("JSON collection HTTP code: #{prog_coll.code}", LOG_DEBUG)
       if prog_coll.code == '200' then
-        log(prog_coll.body, LOG_DEBUG)
+        log(prog_coll.body, LOG_DEBUG2)
         coll_parsed = JSON.parse(prog_coll.body)
         if coll_parsed['datakey']['id'] == 'COLLECTION_VIDEOS' then
           teasers += coll_parsed['data'].find_all {|e| e['type'] == "teaser"}
@@ -172,7 +173,7 @@ def dump_video(vidinfo)
         videoconf = "https://api.arte.tv/api/player/v1/config/#{$options[:lang]}/#{vidinfo[:id].gsub(/-A$/,"-F")}"
         videoconf_content = fetch(videoconf)
     end
-	log(videoconf_content, LOG_DEBUG)
+	log(videoconf_content, LOG_DEBUG2)
 	vid_json = JSON.parse(videoconf_content)
 
     if videoconf_content =~ /type": "error"/
@@ -275,7 +276,7 @@ def find_prog(prog)
 	plus7 = Net::HTTP.get(URI("#{search_url}"))
     results = JSON.parse(plus7)
 
-    log(results, LOG_DEBUG)
+    log(results, LOG_DEBUG2)
 
     return results['zones'][0]['data'][0]
 end
@@ -297,6 +298,7 @@ parser = OptionParser.new do |opts|
     }
     opts.on('-D', "--description", 'save description along with the file') { |v| $options[:desc] = true }
     opts.on('-v', "--verbose", 'debug output') { |v| $options[:log] = LOG_DEBUG }
+    opts.on('-V', "--veryverbose", 'debug2 output') { |v| $options[:log] = LOG_DEBUG2 }
     opts.on('-f', "--force", 'overwrite destination file') { $options[:force] = true }
     opts.on("-l", "--lang=LANG", 'choose language, german (de) or french (fr) (default is "fr")') { |l| $options[:lang] = l }
     opts.on("-q", "--qual=QUAL", QUALITY, 'choose quality, sq is default', '(%s)' % QUALITY.join(', ')) { |q| $options[:qual] = q }
