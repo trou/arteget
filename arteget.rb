@@ -116,8 +116,15 @@ def get_videos(lang, progname, num)
       log("Getting #{progname} page at #{url}")
       prog_page = Net::HTTP.get(URI(url))
       prog_json = prog_page[/window.__INITIAL_STATE__ = (.*);/, 1]
+      log(prog_json, LOG_DEBUG2)
       log("Program id: "+id)
-      prog_parsed = JSON.parse(prog_json)['pages']['list'][id+'_{}']['zones']
+      prog_list = JSON.parse(prog_json)['pages']['list']
+      if prog_list.has_key?(id+'_{}') then
+        prog_parsed = prog_list[id+'_{}']['zones']
+      else
+        key = prog_list.keys.find(/#{id}/).first()
+        prog_parsed = prog_list[key]['zones']
+      end
 
       list = prog_parsed.find {|p| p['code']['name'] == 'collection_videos'}
       # Maybe it's a program, not a collection
