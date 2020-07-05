@@ -24,6 +24,7 @@ v3.5:
      - Some fixes
      - new verbosity level
      - --min-dur option to specify minimum duration
+     - fix some download cases
 v3.4: 2018/10/18
      - fix download by program name (website update)
 v3.3: 2018/09/23
