@@ -33,8 +33,6 @@ LOG_DEBUG2 = 3
 $options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :variant => nil,
             :desc => false, :num => 1, :min => 0}
 
-
-
 HANDLERS = { }
 
 def fetch(uri_str, limit = 10)
@@ -56,16 +54,16 @@ def fetch(uri_str, limit = 10)
 end
 
 def log(msg, level=LOG_NORMAL)
-	puts msg if level <= $options[:log]
+    puts msg if level <= $options[:log]
 end
 
 def error(msg)
-	log(msg, LOG_ERROR)
+    log(msg, LOG_ERROR)
 end
 
 def fatal(msg)
-	error(msg)
-	exit(1)
+    error(msg)
+    exit(1)
 end
 
 def which(cmd)
@@ -172,17 +170,17 @@ end
 def dump_video(vidinfo)
     log("Trying to get #{vidinfo[:title] || vidinfo[:id]}")
 
-	log("Getting video description JSON")
+    log("Getting video description JSON")
     videoconf = "https://api.arte.tv/api/player/v1/config/#{$options[:lang]}/#{vidinfo[:id]}?lifeCycle=1"
-	log(videoconf, LOG_DEBUG)
+    log(videoconf, LOG_DEBUG)
 
-	videoconf_content = fetch(videoconf)
+    videoconf_content = fetch(videoconf)
     if videoconf_content =~ /(plus|pas) disponible/ then
         videoconf = "https://api.arte.tv/api/player/v1/config/#{$options[:lang]}/#{vidinfo[:id].gsub(/-A$/,"-F")}"
         videoconf_content = fetch(videoconf)
     end
-	log(videoconf_content, LOG_DEBUG2)
-	vid_json = JSON.parse(videoconf_content)
+    log(videoconf_content, LOG_DEBUG2)
+    vid_json = JSON.parse(videoconf_content)
 
     if videoconf_content =~ /type": "error"/
         puts "An error happened : "+vid_json["videoJsonPlayer"]["custom_msg"]["msg"]
@@ -235,18 +233,18 @@ def dump_video(vidinfo)
     good = good.first
 
     wget_url = good['url']
-	if not wget_url then
-		return error("No such quality")
-	end
-	log(wget_url, LOG_DEBUG)
+    if not wget_url then
+        return error("No such quality")
+    end
+    log(wget_url, LOG_DEBUG)
 
     if $options[:dest] then
         filename = $options[:dest]+File::SEPARATOR
     else
         filename = ""
     end
-	filename = filename + ($options[:filename] || vidinfo[:id]+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".mp4")
-	return log("Already downloaded") if File.exists?(filename) and not $options[:force]
+    filename = filename + ($options[:filename] || vidinfo[:id]+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".mp4")
+    return log("Already downloaded") if File.exists?(filename) and not $options[:force]
 
     if $options[:desc] then
         log("Dumping description : "+filename+".txt")
@@ -256,32 +254,32 @@ def dump_video(vidinfo)
         d.close()
     end
 
-	log("Dumping video : "+filename)
-	log("wget -nv -O #{filename} \"#{wget_url}\"", LOG_DEBUG)
-	fork do
-		exec("wget", "-nv", "-O", filename, wget_url)
-	end
+    log("Dumping video : "+filename)
+    log("wget -nv -O #{filename} \"#{wget_url}\"", LOG_DEBUG)
+    fork do
+        exec("wget", "-nv", "-O", filename, wget_url)
+    end
 
-	Process.wait
-	if $?.exited?
-		case $?.exitstatus
-			when 0 then
-				log("Video successfully dumped")
-			when 1 then
-				return error("wget failed")
-			when 2 then
-				log("wget exited, trying to resume")
+    Process.wait
+    if $?.exited?
+        case $?.exitstatus
+            when 0 then
+                log("Video successfully dumped")
+            when 1 then
+                return error("wget failed")
+            when 2 then
+                log("wget exited, trying to resume")
                 exec("wget", "-c", "-O", filename, wget_url)
-		end
-	end
+        end
+    end
 end
 
 def find_prog(prog)
     prog_enc = CGI::escape(prog)
     search_url = "https://www.arte.tv/guide/api/emac/v3/#{$options[:lang]}/web/search/?query=#{prog_enc}"
-	log("Searching for #{prog} at #{search_url}")
+    log("Searching for #{prog} at #{search_url}")
 
-	plus7 = Net::HTTP.get(URI("#{search_url}"))
+    plus7 = Net::HTTP.get(URI("#{search_url}"))
     results = JSON.parse(plus7)
 
     log(results, LOG_DEBUG2)
@@ -324,16 +322,16 @@ end
 
 begin parser.parse!
 rescue OptionParser::ParseError
-	puts $!
-	puts parser
-	exit
+    puts $!
+    puts parser
+    exit
 end
 
 if ARGV.length == 0
-	puts parser
-	exit
+    puts parser
+    exit
 elsif ARGV.length == 1
-	progname=ARGV.shift
+    progname=ARGV.shift
 end
 
 if not which("rtmpdump")
