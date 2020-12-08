@@ -334,8 +334,8 @@ elsif ARGV.length == 1
     progname=ARGV.shift
 end
 
-if not which("rtmpdump")
-    puts "rtmpdump not found"
+if not which("wget")
+    puts "wget not found"
     exit 1
 end
 
