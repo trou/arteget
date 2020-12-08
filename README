@@ -4,20 +4,20 @@ It uses wget to dump streams to the disk. Be sure to have it in your PATH.
 
 Basic usage:
 1) downloading the latest broadcast of a given program:
-	$ ./arteget.rb karambolage
+    $ ./arteget.rb karambolage
 2) download the latest one that is at least 5 mn, with the description
     $ ./arteget.rb -D -m 300 karambolage
 3) downloading a single video:
-	$ ./arteget.rb http://www.arte.tv/guide/fr/040347-001/le-cerveau-et-ses-automatismes-1-2
+    $ ./arteget.rb http://www.arte.tv/guide/fr/040347-001/le-cerveau-et-ses-automatismes-1-2
 4) downloading in german, standard quality:
-	$ ./arteget.rb --qual=sq --lang=de karambolage
+    $ ./arteget.rb --qual=sq --lang=de karambolage
 
 Notes:
 Specifying an arbitrary string instead of an URL actualy uses the search
 engine, so you have some freedom here.
 
 History:
-v3.5: 
+v3.5:
      - New API URLs
      - better handling of single program search results
      - Use API url to list videos, allowing more downloads
@@ -64,23 +64,23 @@ v2.0: 2013/08/25
        the old one.
      - allow download of subtitled version
 v1.11: 2011/04/30
-	 - fix URL downloading bug
+     - fix URL downloading bug
 v1.1: 2011/03/06
-	 - options on the command line
-	 - reworked to use XML descriptions
-	 - top videos (views/ratings) support
-	 - quiet mode
+     - options on the command line
+     - reworked to use XML descriptions
+     - top videos (views/ratings) support
+     - quiet mode
 v1.01: 2011/02/20
-	 - URL arg support
-	 - new site URL
-	 - libhttp update
+     - URL arg support
+     - new site URL
+     - libhttp update
 v1.0: 2010/06/13
-	 - new libhttp release
-	 - handles new site
-	 - way cleaner code
+     - new libhttp release
+     - handles new site
+     - way cleaner code
 
-v0.1:  2008/XX/XX 
-	 - First "release"
+v0.1:  2008/XX/XX
+     - First "release"
 
 Contact me by mail:
 mailbox: devel-arteget
