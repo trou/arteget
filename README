@@ -10,7 +10,7 @@ Basic usage:
 3) downloading a single video:
 	$ ./arteget.rb http://www.arte.tv/guide/fr/040347-001/le-cerveau-et-ses-automatismes-1-2
 4) downloading in german, standard quality:
-	$ ./arteget.rb --qual=HQ --lang=de karambolage
+	$ ./arteget.rb --qual=sq --lang=de karambolage
 
 Notes:
 Specifying an arbitrary string instead of an URL actualy uses the search
