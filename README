@@ -8,9 +8,11 @@ Basic usage:
 2) download the latest one that is at least 5 mn, with the description
     $ ./arteget.rb -D -m 300 karambolage
 3) downloading a single video:
-    $ ./arteget.rb http://www.arte.tv/guide/fr/040347-001/le-cerveau-et-ses-automatismes-1-2
+    $ ./arteget.rb https://www.arte.tv/fr/videos/098342-009-A/karambolage/
 4) downloading in german, standard quality:
     $ ./arteget.rb --qual=sq --lang=de karambolage
+5) downloading all the broadcast of a given program:
+    $ ./arteget.rb RC-014034
 
 Notes:
 Specifying an arbitrary string instead of an URL actualy uses the search
