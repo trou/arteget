@@ -137,6 +137,12 @@ def get_videos(lang, progname, num)
           type = "teaser"
       end
 
+      # Maybe it's a collection with subcollection
+      if list['data'].empty? then
+        collections = prog_parsed.find_all {|p| p['code']['name'] == 'collection_subcollection'}
+        list['data'] = collections.map{|e| e['data']}.flatten(1)
+      end
+
       teasers = list['data'].find_all {|e| e['type'] == type}
     end
 
