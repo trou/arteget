@@ -116,7 +116,11 @@ def get_videos(lang, progname, num)
       prog_json = prog_page[/window.__INITIAL_STATE__ = (.*);/, 1]
       log(prog_json, LOG_DEBUG2)
       log("Program id: "+id)
-      prog_list = JSON.parse(prog_json)['pages']['list']
+      begin
+        prog_list = JSON.parse(prog_json)['pages']['list']
+      rescue TypeError
+        fatal("Error: could not parse program JSON")
+      end
       if prog_list.has_key?(id+'_{}') then
         prog_parsed = prog_list[id+'_{}']['zones']
       else
