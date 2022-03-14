@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # arteget
-# Copyright 2008-2021 Raphaël Rigo
+# Copyright 2008-2022 Raphaël Rigo
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -124,7 +124,7 @@ def get_videos(lang, progname, num)
       if prog_list.has_key?(id+'_{}') then
         prog_parsed = prog_list[id+'_{}']['zones']
       else
-        key = prog_list.keys.find(/#{id}/).first()
+        key = prog_list.keys.find { |key| key =~ /#{id}/ }
         prog_parsed = prog_list[key]['zones']
       end
 
