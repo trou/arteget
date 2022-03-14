@@ -114,10 +114,15 @@ def get_videos(lang, progname, num)
       log("Getting #{progname} page at #{url}")
       prog_page = Net::HTTP.get(URI(url))
       prog_json = prog_page[/window.__INITIAL_STATE__ = (.*);/, 1]
+      prog_keys = ->(j) { j.dig('pages', 'list') }
+      unless prog_json then
+        prog_json = prog_page[%r{<script id="__NEXT_DATA__" type="application/json">([^<]+)</script>}, 1]
+        prog_keys = ->(j) { j.dig('props', 'pageProps') }
+      end
       log(prog_json, LOG_DEBUG2)
       log("Program id: "+id)
       begin
-        prog_list = JSON.parse(prog_json)['pages']['list']
+        prog_list = prog_keys.call(JSON.parse(prog_json))
       rescue TypeError
         fatal("Error: could not parse program JSON")
       end
