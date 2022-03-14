@@ -127,11 +127,17 @@ def get_videos(lang, progname, num)
         fatal("Error: could not parse program JSON")
       end
       if prog_list.has_key?(id+'_{}') then
-        prog_parsed = prog_list[id+'_{}']['zones']
+        key = id+'_{}'
       else
         key = prog_list.keys.find { |key| key =~ /#{id}/ }
-        prog_parsed = prog_list[key]['zones']
+        # Search one level deeper, for example: initialPage[id="RC-020692_fr_web"]/zones
+        key ||= prog_list.select { |_, value| value.is_a?(Hash) && value.key?('zones') }.keys.first
+
+        log("Program id #{prog_list[key]['id']} doesn't match #{id}", LOG_DEBUG) unless prog_list[key]['id'] =~ /#{id}/
+        fatal("Error: could not find program info") unless key
       end
+
+      prog_parsed = prog_list[key]['zones']
 
       list = prog_parsed.find {|p| p['code']['name'] == 'collection_videos'}
       # Maybe it's a program, not a collection
