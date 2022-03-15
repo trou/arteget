@@ -12,7 +12,7 @@ Basic usage:
 4) downloading in german, standard quality:
     $ ./arteget.rb --qual=sq --lang=de karambolage
 5) downloading all the broadcast of a given program:
-    $ ./arteget.rb RC-014034
+    $ ./arteget.rb -n 100 RC-014034
 
 Notes:
 Specifying an arbitrary string instead of an URL actualy uses the search
