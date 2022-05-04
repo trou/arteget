@@ -15,7 +15,7 @@ Basic usage:
     $ ./arteget.rb -n 100 RC-014034
 
 Notes:
-Specifying an arbitrary string instead of an URL actualy uses the search
+Specifying an arbitrary string instead of an URL actually uses the search
 engine, so you have some freedom here.
 
 History:
