@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # arteget
-# Copyright 2008-2021 Raphaël Rigo
+# Copyright 2008-2022 Raphaël Rigo
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -114,19 +114,30 @@ def get_videos(lang, progname, num)
       log("Getting #{progname} page at #{url}")
       prog_page = Net::HTTP.get(URI(url))
       prog_json = prog_page[/window.__INITIAL_STATE__ = (.*);/, 1]
+      prog_keys = ->(j) { j.dig('pages', 'list') }
+      unless prog_json then
+        prog_json = prog_page[%r{<script id="__NEXT_DATA__" type="application/json">([^<]+)</script>}, 1]
+        prog_keys = ->(j) { j.dig('props', 'pageProps') }
+      end
       log(prog_json, LOG_DEBUG2)
       log("Program id: "+id)
       begin
-        prog_list = JSON.parse(prog_json)['pages']['list']
+        prog_list = prog_keys.call(JSON.parse(prog_json))
       rescue TypeError
         fatal("Error: could not parse program JSON")
       end
       if prog_list.has_key?(id+'_{}') then
-        prog_parsed = prog_list[id+'_{}']['zones']
+        key = id+'_{}'
       else
-        key = prog_list.keys.find(/#{id}/).first()
-        prog_parsed = prog_list[key]['zones']
+        key = prog_list.keys.find { |key| key =~ /#{id}/ }
+        # Search one level deeper, for example: initialPage[id="RC-020692_fr_web"]/zones
+        key ||= prog_list.select { |_, value| value.is_a?(Hash) && value.key?('zones') }.keys.first
+
+        log("Program id #{prog_list[key]['id']} doesn't match #{id}", LOG_DEBUG) unless prog_list[key]['id'] =~ /#{id}/
+        fatal("Error: could not find program info") unless key
       end
+
+      prog_parsed = prog_list[key]['zones']
 
       list = prog_parsed.find {|p| p['code']['name'] == 'collection_videos'}
       # Maybe it's a program, not a collection
