@@ -30,7 +30,7 @@ LOG_NORMAL = 1
 LOG_DEBUG = 2
 LOG_DEBUG2 = 3
 
-$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "sq", :variant => nil,
+$options = {:log => LOG_NORMAL, :lang => "fr", :qual => "xq", :variant => nil,
             :desc => false, :num => 1, :min => 0}
 
 HANDLERS = { }
@@ -158,10 +158,30 @@ def get_videos(lang, progname, num)
     return videos
 end
 
-def display_variants(vid_json)
-    variants = vid_json['videoJsonPlayer']['VSR'].values.reduce([]) {
+# Parse HLS m3u to extract audio and video urls
+def parse_m3u(m3u_url)
+    m3u = fetch(m3u_url)
+    path = m3u_url[/.*\//]
+    # TODO: actually handle quality
+    vid_p_url = path + m3u.lines.find {|l| l.include?("v720.m3u8")}.rstrip()
+    m3u.lines.find {|l| l =~ /TYPE=AUDIO.*URI="(.*m3u8)"/}.rstrip()
+    aud_p_url = path+$1
+    fetch(aud_p_url).lines.find {|l| l =~ /#EXT-X-MAP:URI="(.*?)"/}
+    aud_file = $1
+    aud_url = aud_p_url[/.*\//]+aud_file
+    fetch(vid_p_url).lines.find {|l| l =~ /#EXT-X-MAP:URI="(.*?)"/}
+    vid_file = $1
+    vid_url = vid_p_url[/.*\//]+vid_file
+    return vid_url, aud_url
+end
+
+def display_variants(vid_json_data)
+    streams = vid_json_data['attributes']['streams']
+    log(streams, LOG_DEBUG)
+    variants = streams.reduce([]) {
         |result,h|
-        variant = [h['versionCode'], h['versionLibelle']]
+        # TODO: handle multiple versions
+        variant = [h['versions'][0]['eStat']['ml5'], h['versions'][0]['label']]
         result << variant unless result.include?(variant)
         result
     }
@@ -177,16 +197,36 @@ def display_variants(vid_json)
     end
 end
 
+def do_wget(url, filename)
+    log("wget -nv -O \"#{filename}\" \"#{url}\"", LOG_DEBUG)
+    fork do
+        exec("wget", "-nv", "-O", filename, url)
+    end
+
+    Process.wait
+    if $?.exited?
+        case $?.exitstatus
+            when 0 then
+                log("File successfully dumped")
+            when 1 then
+                return error("wget failed")
+            when 2 then
+                log("wget exited, trying to resume")
+                exec("wget", "-c", "-O", filename, wget_url)
+        end
+    end
+end
+
 def dump_video(vidinfo)
     log("Trying to get #{vidinfo[:title] || vidinfo[:id]}")
 
     log("Getting video description JSON")
-    videoconf = "https://api.arte.tv/api/player/v1/config/#{$options[:lang]}/#{vidinfo[:id]}?lifeCycle=1"
+    videoconf = "https://api.arte.tv/api/player/v2/config/#{$options[:lang]}/#{vidinfo[:id]}"
     log(videoconf, LOG_DEBUG)
 
     videoconf_content = fetch(videoconf)
     if videoconf_content =~ /(plus|pas) disponible/ then
-        videoconf = "https://api.arte.tv/api/player/v1/config/#{$options[:lang]}/#{vidinfo[:id].gsub(/-A$/,"-F")}"
+        videoconf = "https://api.arte.tv/api/player/v2/config/#{$options[:lang]}/#{vidinfo[:id].gsub(/-A$/,"-F")}"
         videoconf_content = fetch(videoconf)
     end
     log(videoconf_content, LOG_DEBUG2)
@@ -197,32 +237,31 @@ def dump_video(vidinfo)
         Kernel.exit(1)
     end
 
-    if vid_json['videoJsonPlayer']['VSR'].empty?
-        log "Video found but metadata are incomplete. lang might be erroneous."
-        exit
-    end
-
     if $options[:variant] == 'list' then
-        display_variants(vid_json)
+        display_variants(vid_json['data'])
         exit
     end
 
+    log(vid_json['data'], LOG_DEBUG2)
+    log(vid_json['data']['metadata'], LOG_DEBUG2)
+    metadata = vid_json['data']['attributes']['metadata']
     # Fill metadata if needed
-    title = vidinfo[:title] || vid_json['videoJsonPlayer']['VTI'] || ""
-    teaser = vid_json['videoJsonPlayer']['V7T'] || vid_json['videoJsonPlayer']['VDE'] || ""
+    title = metadata['title'] || ""
+    teaser = metadata['description'] + ""
     log(title+" : "+teaser)
 
-    ###
-    # Some information :
-    #   - mediaType can be "mp4" or "hls"
-    #   - versionCode can be "VF-STF", "VA-STA", "VO-STF"
-    #   - versionProg == 1 is the default variant (depends on lang)
-    ###
+    ## Get Playlist with all streams
+    pl_url = vid_json['data']['attributes']["streams"].first['url']
+    log(pl_url, LOG_DEBUG)
+    pl = fetch(pl_url)
+    log(pl, LOG_DEBUG2)
+
+    streams = vid_json['data']['attributes']["streams"]
+
     if $options[:variant] then
-        good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
-            v['quality'] =~ /^#{$options[:qual]}/i and
-            v['mediaType'] == 'mp4' and
-            $options[:variant] == v['versionCode']
+        good = streams.find_all do |v|
+            h['mainQuality']['code'] =~ /^#{$options[:qual]}/i and
+            $options[:variant] == h['versions'][0]['eStat']['ml5']
         end
     end
 
@@ -231,22 +270,25 @@ def dump_video(vidinfo)
         if $options[:variant] then
             log("Variant not found ? Trying default")
         end
-        good = vid_json['videoJsonPlayer']["VSR"].values.find_all do |v|
-            v['quality'] =~ /^#{$options[:qual]}/i and
-            v['mediaType'] == 'mp4' and
-            v['versionProg'].to_i == 1
+        good = streams.find_all do |v|
+            v['mainQuality']['code'] =~ /^#{$options[:qual]}/i and
+            v['protocol'] == 'HLS_NG' and
+            v['slot'].to_i == 1
         end
     end
+
     if good.length > 1 then
         log("Several version matching, downloading the first one")
     end
     good = good.first
 
-    wget_url = good['url']
-    if not wget_url then
+    playlist_url = good['url']
+    if not playlist_url then
         return error("No such quality")
     end
-    log(wget_url, LOG_DEBUG)
+    log(playlist_url, LOG_DEBUG)
+
+    vid_url, aud_url = parse_m3u(playlist_url)
 
     if $options[:dest] then
         filename = $options[:dest]+File::SEPARATOR
@@ -264,17 +306,21 @@ def dump_video(vidinfo)
         d.close()
     end
 
-    log("Dumping video : "+filename)
-    log("wget -nv -O \"#{filename}\" \"#{wget_url}\"", LOG_DEBUG)
+    log("Dumping video")
+    do_wget(vid_url, filename+"-video.mp4")
+    log("Dumping audio")
+    do_wget(aud_url, filename+"-audio.mp4")
+
+    log("Merging files")
     fork do
-        exec("wget", "-nv", "-O", filename, wget_url)
+        exec("ffmpeg", "-v", "8", "-i", filename+"-video.mp4", "-i", filename+"-audio.mp4", "-c:v", "copy", "-c:a", "copy",  filename)
     end
 
     Process.wait
     if $?.exited?
         case $?.exitstatus
             when 0 then
-                log("Video successfully dumped")
+                log("File successfully dumped")
             when 1 then
                 return error("wget failed")
             when 2 then
@@ -282,6 +328,8 @@ def dump_video(vidinfo)
                 exec("wget", "-c", "-O", filename, wget_url)
         end
     end
+    File.unlink(filename+"-video.mp4")
+    File.unlink(filename+"-audio.mp4")
 end
 
 def find_prog(prog)
