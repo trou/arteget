@@ -275,7 +275,7 @@ def dump_video(vidinfo)
     streams = vid_json['data']['attributes']["streams"]
 
     if $options[:variant] then
-        good = streams.find_all do |v|
+        good = streams.find_all do |h|
             h['mainQuality']['code'] =~ /^#{$options[:qual]}/i and
             $options[:variant] == h['versions'][0]['eStat']['ml5']
         end
