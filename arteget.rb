@@ -100,6 +100,11 @@ def get_videos(lang, progname, num)
       if prog_coll.code == '200' then
         log(prog_coll.body, LOG_DEBUG2)
         coll_parsed = JSON.parse(prog_coll.body)
+        if coll_parsed['tag'] == "Ok" then
+          coll_parsed = coll_parsed['value']
+        else
+          fatal("Server returned an error")
+        end
         if coll_parsed['datakey']['id'] == 'COLLECTION_VIDEOS' then
           teasers += coll_parsed['data'].find_all {|e| e['type'] == "teaser" and e['duration'] > $options[:min]}
           # Stop looping if there's no new video
@@ -353,7 +358,7 @@ def find_prog(prog)
 
     log(results, LOG_DEBUG2)
 
-    return results['zones'][0]['data'][0]
+    return results['value']['zones'][0]['data'][0]
 end
 
 QUALITY = ['sq', 'eq', 'mq', 'xq']
