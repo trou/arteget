@@ -259,7 +259,8 @@ def dump_video(vidinfo)
     end
 
     log(vid_json['data'], LOG_DEBUG2)
-    log(vid_json['data']['metadata'], LOG_DEBUG2)
+    log("vid_json['data']['attributes']['metadata']", LOG_DEBUG2)
+    log(vid_json['data']['attributes']['metadata'], LOG_DEBUG2)
     metadata = vid_json['data']['attributes']['metadata']
     # Fill metadata if needed
     title = metadata['title'] || ""
@@ -273,6 +274,8 @@ def dump_video(vidinfo)
     log(pl, LOG_DEBUG2)
 
     streams = vid_json['data']['attributes']["streams"]
+    log("streams", LOG_DEBUG2)
+    log(streams, LOG_DEBUG2)
 
     if $options[:variant] then
         good = streams.find_all do |h|
@@ -280,6 +283,8 @@ def dump_video(vidinfo)
             $options[:variant] == h['versions'][0]['eStat']['ml5']
         end
     end
+    log("good", LOG_DEBUG2)
+    log(good, LOG_DEBUG2)
 
     # If we failed to find specified variant, try normal
     if not good or good.length == 0 then
@@ -293,6 +298,8 @@ def dump_video(vidinfo)
         end
     end
 
+    log("good2", LOG_DEBUG2)
+    log(good, LOG_DEBUG2)
     if good.length > 1 then
         log("Several version matching, downloading the first one")
     end
