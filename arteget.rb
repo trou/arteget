@@ -177,14 +177,15 @@ end
 # Parse HLS m3u to extract audio and video urls
 def parse_m3u(m3u_url)
     m3u = fetch(m3u_url)
-    path = m3u_url[/.*\//]
     # TODO: actually handle quality
-    vid_p_url = path + m3u.lines.find {|l| l.include?("v720.m3u8")}.rstrip()
+    vid_p_url = m3u.lines.find {|l| l.include?("v1080.m3u8")}.rstrip()
     m3u.lines.find {|l| l =~ /TYPE=AUDIO.*URI="(.*m3u8)"/}.rstrip()
-    aud_p_url = path+$1
+    aud_p_url = $1
+    log("aud_p_url: "+aud_p_url, LOG_DEBUG)
     fetch(aud_p_url).lines.find {|l| l =~ /#EXT-X-MAP:URI="(.*?)"/}
     aud_file = $1
     aud_url = aud_p_url[/.*\//]+aud_file
+    log("vid_p_url: "+vid_p_url, LOG_DEBUG)
     fetch(vid_p_url).lines.find {|l| l =~ /#EXT-X-MAP:URI="(.*?)"/}
     vid_file = $1
     vid_url = vid_p_url[/.*\//]+vid_file
@@ -293,7 +294,7 @@ def dump_video(vidinfo)
         end
         good = streams.find_all do |v|
             v['mainQuality']['code'] =~ /^#{$options[:qual]}/i and
-            v['protocol'] == 'HLS_NG' and
+            v['protocol'] == 'API_HLS_NG' and
             v['slot'].to_i == 1
         end
     end
@@ -309,6 +310,7 @@ def dump_video(vidinfo)
     if not playlist_url then
         return error("No such quality")
     end
+    log("playlist_url", LOG_DEBUG)
     log(playlist_url, LOG_DEBUG)
 
     vid_url, aud_url = parse_m3u(playlist_url)
