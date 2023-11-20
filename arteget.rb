@@ -298,7 +298,7 @@ def dump_video(vidinfo)
         end
         good = streams.find_all do |v|
             v['mainQuality']['code'] =~ /^#{$options[:qual]}/i and
-            v['protocol'] == 'API_HLS_NG' and
+            v['protocol'] =~ /API_HLS_NG/ and
             v['slot'].to_i == 1
         end
     end
