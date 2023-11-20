@@ -53,8 +53,12 @@ def fetch(uri_str, limit = 10)
   end
 end
 
-def log(msg, level=LOG_NORMAL)
-    puts msg if level <= $options[:log]
+def log(msg, level=LOG_NORMAL, pp=false)
+    if pp then
+      pp msg if level <= $options[:log]
+    else
+      puts msg if level <= $options[:log]
+    end
 end
 
 def error(msg)
@@ -275,8 +279,8 @@ def dump_video(vidinfo)
     log(pl, LOG_DEBUG2)
 
     streams = vid_json['data']['attributes']["streams"]
-    log("streams", LOG_DEBUG2)
-    log(streams, LOG_DEBUG2)
+    log("streams (#{streams.class})", LOG_DEBUG2)
+    log(streams, LOG_DEBUG2, true)
 
     if $options[:variant] then
         good = streams.find_all do |h|
