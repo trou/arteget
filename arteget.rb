@@ -95,13 +95,36 @@ def get_videos(lang, progname, num)
     teasers = []
 
     # Trying first the collections URL
-    page = 1
-    while teasers.length < num do
-      collec_url = "https://www.arte.tv/api/rproxy/emac/v4/#{$options[:lang]}/web/data/COLLECTION_VIDEOS/?collectionId=#{id}&page=#{page}"
-      log("Getting #{progname} (page #{page}) JSON collection at #{collec_url}")
-      prog_coll = Net::HTTP.get_response(URI(collec_url))
-      log("JSON collection HTTP code: #{prog_coll.code}", LOG_DEBUG)
-      if prog_coll.code == '200' then
+    collec_url = "https://www.arte.tv/api/rproxy/emac/v4/#{$options[:lang]}/web/collections/#{id}"
+    log("Getting #{progname} JSON collection at #{collec_url}")
+    prog_coll = Net::HTTP.get_response(URI(collec_url))
+    log("JSON collection HTTP code: #{prog_coll.code}", LOG_DEBUG)
+    next_url = nil
+    if prog_coll.code == '200' then
+      log(prog_coll.body, LOG_DEBUG2)
+      coll_parsed = JSON.parse(prog_coll.body)
+      if coll_parsed['tag'] == "Ok" then
+        coll_parsed = coll_parsed['value']
+      else
+        fatal("Server returned an error")
+      end
+      if coll_parsed['type'] == 'collection' then
+        # find collection videos
+        entries = coll_parsed['zones'].find { |e| e['code'] =~ /^collection_videos/ }
+        teasers += entries['content']['data'].find_all {|e| e['type'] == "teaser" and e['duration'] > $options[:min]}
+        next_url = "https://www.arte.tv"+entries['content']['pagination']['links']['next'].gsub("/api/emac/", "/api/rproxy/emac/")
+      end
+    else
+      fatal("Could not get collection")
+    end
+
+    # if needed, go through next pages
+    while teasers.length < num and next_url != nil do
+      log("Getting #{progname} next page JSON collection at #{next_url}")
+      prog_coll = Net::HTTP.get_response(URI(next_url))
+      if prog_coll.code != '200' then
+        fatal("Could not get next page")
+      else
         log(prog_coll.body, LOG_DEBUG2)
         coll_parsed = JSON.parse(prog_coll.body)
         if coll_parsed['tag'] == "Ok" then
@@ -109,12 +132,9 @@ def get_videos(lang, progname, num)
         else
           fatal("Server returned an error")
         end
-        if coll_parsed['datakey']['id'] == 'COLLECTION_VIDEOS' then
-          teasers += coll_parsed['data'].find_all {|e| e['type'] == "teaser" and e['duration'] > $options[:min]}
-          # Stop looping if there's no new video
-          num = teasers.length if coll_parsed['data'].length == 0
-          page += 1
-        end
+        teasers += coll_parsed['data'].find_all {|e| e['type'] == "teaser" and e['duration'] > $options[:min]}
+        next_url = coll_parsed['pagination']['links']['next']
+        next_url = "https://www.arte.tv"+next_url.gsub("/api/emac/", "/api/rproxy/emac/") if next_url
       end
     end
 
