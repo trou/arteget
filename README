@@ -19,8 +19,8 @@ Specifying an arbitrary string instead of an URL actually uses the search
 engine, so you have some freedom here.
 
 History:
-v3.5:
-     - New API URLs
+v3.5: 2024/06/01
+     - New API URLs (fixed several times)
      - better handling of single program search results
      - Use API url to list videos, allowing more downloads
      - Some fixes
