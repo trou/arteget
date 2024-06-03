@@ -111,12 +111,21 @@ def get_videos(lang, progname, num)
       if coll_parsed['type'] == 'collection' then
         # find collection videos
         entries = coll_parsed['zones'].find { |e| e['code'] =~ /^collection_videos/ }
+        # if collection_videos is "empty", try subcollections
+        if entries['content']['data'].length == 0 then
+          entries = coll_parsed['zones'].find { |e| e['code'] =~ /^collection_subcollection/ }
+        end
         teasers += entries['content']['data'].find_all {|e| e['type'] == "teaser" and e['duration'] > $options[:min]}
-        next_url = "https://www.arte.tv"+entries['content']['pagination']['links']['next'].gsub("/api/emac/", "/api/rproxy/emac/")
+        begin
+          next_url = "https://www.arte.tv"+entries['content']['pagination']['links']['next'].gsub("/api/emac/", "/api/rproxy/emac/")
+        rescue
+          next_url = nil
+        end
       end
     else
       fatal("Could not get collection")
     end
+    log(entries, LOG_DEBUG2)
 
     # if needed, go through next pages
     while teasers.length < num and next_url != nil do
