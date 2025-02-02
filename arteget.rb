@@ -354,7 +354,7 @@ def dump_video(vidinfo)
         filename = ""
     end
     filename = filename + ($options[:filename] || vidinfo[:id]+"_"+title.gsub(/[\/ "*:<>?|\\]/," ")+"_"+$options[:qual]+".mp4")
-    return log("Already downloaded") if File.exists?(filename) and not $options[:force]
+    return log("Already downloaded") if File.exist?(filename) and not $options[:force]
 
     if $options[:desc] then
         log("Dumping description : "+filename+".txt")
