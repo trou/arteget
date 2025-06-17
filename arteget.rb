@@ -117,7 +117,12 @@ def get_videos(lang, progname, num)
         end
         teasers += entries['content']['data'].find_all {|e| e['type'] == "teaser" and e['duration'] > $options[:min]}
         begin
-          next_url = "https://www.arte.tv"+entries['content']['pagination']['links']['next'].gsub("/api/emac/", "/api/rproxy/emac/")
+          next_entry = entries['content']['pagination']['links']['next'].gsub("/api/emac/", "/api/rproxy/emac/")
+          if next_entry =~ /^http/ then
+            next_url = next_entry.gsub("/api/emac/", "/api/rproxy/emac/").gsub('api-cdn.arte.tv','www.arte.tv')
+          else
+            next_url = "https://www.arte.tv"+next_entry
+          end
         rescue
           next_url = nil
         end
@@ -143,7 +148,11 @@ def get_videos(lang, progname, num)
         end
         teasers += coll_parsed['data'].find_all {|e| e['type'] == "teaser" and e['duration'] > $options[:min]}
         next_url = coll_parsed['pagination']['links']['next']
-        next_url = "https://www.arte.tv"+next_url.gsub("/api/emac/", "/api/rproxy/emac/") if next_url
+        if next_url =~ /^http/ then
+          next_url = next_url.gsub("/api/emac/", "/api/rproxy/emac/").gsub('api-cdn.arte.tv','www.arte.tv')
+        else
+          next_url = "https://www.arte.tv"+next_url.gsub("/api/emac/", "/api/rproxy/emac/") if next_url
+        end
       end
     end
 
