@@ -237,10 +237,10 @@ end
 def display_variants(vid_json_data)
     streams = vid_json_data['attributes']['streams']
     log(streams, LOG_DEBUG)
-    variants = streams.reduce([]) {
+    variants = streams[0]['versions'].reduce([]) {
         |result,h|
         # TODO: handle multiple versions
-        variant = [h['versions'][0]['eStat']['ml5'], h['versions'][0]['label']]
+        variant = [h['code'], h['label']]
         result << variant unless result.include?(variant)
         result
     }
@@ -387,12 +387,9 @@ def dump_video(vidinfo)
     if $?.exited?
         case $?.exitstatus
             when 0 then
-                log("File successfully dumped")
+                log("File successfully merged")
             when 1 then
-                return error("wget failed")
-            when 2 then
-                log("wget exited, trying to resume")
-                exec("wget", "-c", "-O", filename, wget_url)
+                return error("ffmpeg failed")
         end
     end
     File.unlink(filename+"-video.mp4")
