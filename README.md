@@ -63,8 +63,3 @@ arteget --variant list karambolage
 
 Specifying an arbitrary string instead of a URL uses the search engine,
 so you have some freedom there.
-
-## Contact
-
-mailbox: devel-arteget  
-domain: syscall.eu
