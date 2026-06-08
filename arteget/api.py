@@ -39,22 +39,15 @@ def fatal(msg: str) -> NoReturn:
     raise SystemExit(1)
 
 
-def _unwrap_ok(parsed: dict) -> dict:
-    """Unwrap Arte API response envelope {"tag": "Ok", "value": ...}, or fatal on error."""
-    if parsed.get("tag") == "Ok":
-        return parsed["value"]
-    fatal("Server returned an error")
-
-
 def find_prog(prog: str, options) -> dict:
     prog_enc = quote(prog, safe="")
     lang = options.lang
-    search_url = f"https://www.arte.tv/api/rproxy/emac/v4/{lang}/web/pages/SEARCH/?query={prog_enc}"
+    search_url = f"https://api.arte.tv/api/emac/v4/{lang}/web/pages/SEARCH/?query={prog_enc}"
     logger.debug("Searching for %s at %s", prog, search_url)
     text = fetch(search_url)
     logger.debug("%s", text)
     results = json.loads(text)
-    data = results["value"]["zones"][0]["content"]["data"]
+    data = results["zones"][0]["content"]["data"]
     if not data:
         fatal("Cannot find requested program(s)")
     return data[0]
@@ -64,10 +57,9 @@ def _resolve_next_url(link: str | None) -> str | None:
     """Turn pagination next link into full URL, or None if no link."""
     if not link:
         return None
-    next_entry = link.replace("/api/emac/", "/api/rproxy/emac/")
-    if next_entry.startswith("http"):
-        return next_entry.replace("api-cdn.arte.tv", "www.arte.tv")
-    return "https://www.arte.tv" + next_entry
+    if link.startswith("http"):
+        return link.replace("api-cdn.arte.tv", "www.arte.tv")
+    return "https://www.arte.tv" + link
 
 
 def _parse_program_page(url: str, id_: str) -> list[dict]:
@@ -159,7 +151,7 @@ def get_videos(lang: str, progname: str, num: int, options) -> list[dict]:
     teasers = []
 
     collec_url = (
-        f"https://www.arte.tv/api/rproxy/emac/v4/{options.lang}/web/collections/{id_}"
+        f"https://api.arte.tv/api/emac/v4/{options.lang}/web/collections/{id_}"
     )
     logger.info("Getting %s JSON collection at %s", progname, collec_url)
     resp = requests.get(collec_url, timeout=30)
@@ -168,7 +160,7 @@ def get_videos(lang: str, progname: str, num: int, options) -> list[dict]:
     entries = None
     if resp.status_code == 200:
         logger.debug("%s", resp.text)
-        coll_parsed = _unwrap_ok(resp.json())
+        coll_parsed = resp.json()
         if coll_parsed.get("type") == "collection":
             entries = next(
                 (
@@ -216,7 +208,7 @@ def get_videos(lang: str, progname: str, num: int, options) -> list[dict]:
         if resp.status_code != 200:
             fatal("Could not get next page")
         logger.debug("%s", resp.text)
-        coll_parsed = _unwrap_ok(resp.json())
+        coll_parsed = resp.json()
         teasers.extend(
             e
             for e in coll_parsed["data"]
